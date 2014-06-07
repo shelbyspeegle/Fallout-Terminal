@@ -51,6 +51,7 @@ char board[408]; // board of 408 chars ()
 
 void printregisters();
 void printinputarea();
+void printboard();
 void pushMessage(const char *newMessage);
 int tryPassword();
 void removeDud();
@@ -58,11 +59,19 @@ void addPasswordsToBoard();
 int curXYToArray(int x, int y);
 int getYfromArray(int a);
 int getXfromArray(int a);
+char genTrash();
 
 int main() {
 	messages = malloc( sizeof(char*) * MAX_MESSAGES);
 	
 	int rows, cols;
+	
+	// add trash to board
+	int i;
+	for (i = 0; i < 408; i++) {
+		board[i] = genTrash();
+	}
+	
 
 	initscr();						// start the curses mode
 	noecho();						// silence user input
@@ -111,6 +120,7 @@ int main() {
 
 		mvprintw(4, 1, "%i ATTEMPT(S) LEFT : ", trysLeft);
 		printinputarea();
+		printboard();
 		refresh();
 		move(curY, curX);
 		
@@ -171,6 +181,15 @@ void printinputarea() {
 	for (i=0; i < MAX_MESSAGES; i++) {
 		if (messages[i])
 			mvprintw(20-i, 41, "%s", messages[i]); // Only print messages that exist
+	}
+}
+
+void printboard() {
+	int i;
+	for (i = 0; i < 408; i++) { // iterate through each char in array
+		char a = board[i];
+		// if ( a == 'n' || a == '1' || a == '2' )
+			mvprintw(getYfromArray(i), getXfromArray(i), "%c", a);
 	}
 }
 
@@ -244,17 +263,83 @@ int curXYToArray(int x, int y) {
 	return -1;
 }
 
-int getYfromArray(int a) {
+int getYfromArray(int a) { //TODO: combine these two functions using a "Point"
 	int startY = 6;
-	
-	return startY + ( ( a/12 ) / 17 );
+	int reducer = 0;
+	if (a > 203)
+		reducer = 17; //TODO: revisit this name for clarity
+	return startY + ( ( a/12 ) ) - reducer;
 }
 
 int getXfromArray(int a) {
 	int startX = 8;
 	
 	if ( a <= 203 ) 					// left half
-		return a % 12 + startX;
-	else							// right half
-		return a % 12 + startX + 20;
+		return ( a % 12 ) + startX;
+	else								// right half
+		return ( a % 12 ) + startX + 20;
 }
+
+char genTrash() {
+	
+	int min = 1;	// 31 possible chars i want to pick from randomly
+	int max = 31;
+	
+	char c;
+	
+	int i = ( rand() % (max+1-min) ) + min; // 1-31
+	
+	if (i <= 15) { 				// number is between 1, 15
+		c = i + 32;					// ascii values between 33, 47
+	} else if (i <= 22 ) {		// number is between 16, 22
+		c = i + 42;					// ascii values between 58, 64
+	} else if ( i <= 28 ) {		// number is between 23, 28
+		c = i + 68;					// ascii values between 91, 96
+	} else {					// number is between 29, 31
+		c = i + 94;					// ascii values between 123, 125
+	}
+	
+	
+	/*
+	! = 33
+	" = 34
+	# = 35
+	$ = 36
+	% = 37
+	& = 38
+	' = 39
+	( = 40
+	) = 41
+	* = 42
+	+ = 43
+	, = 44
+	- = 45
+	. = 46
+	/ = 47
+          no 48 - 57
+	: = 58
+	; = 59
+	< = 60
+	= = 61
+	> = 62
+	? = 63
+	@ = 64
+		  no 65 - 90
+	[ = 91
+	\ = 92
+	] = 93
+	^ = 94
+	_ = 95
+	` = 96
+           no 97 - 122
+	{ = 123
+	| = 124
+	} = 125
+	*/
+	
+	return c;
+}
+
+
+
+
