@@ -59,6 +59,8 @@ int hackLocations[NUM_HACKS];				// Series of array positions where the
 //int passLocations[NUM_PASSWORDS];			//   hacks and passwords lie on the board.
 char **hacks;
 char **passwords;
+int curY, curX;
+
 
 void printregisters();
 void printinputarea();
@@ -67,19 +69,15 @@ void pushMessage(const char *newMessage);
 int tryPassword();
 void removeDud();
 void addPasswordsToBoard();
-int curYXToArray(int y, int x);
-int getYfromArray(int a);
-int getXfromArray(int a);
+int yxtoarray(int y, int x);
+int arraytoy(int a);
+int arraytox(int a);
 char genTrash();
 void genPasswords();
-int insideWord(int y, int x);
-void highlight(int y, int x);
+int insideWord();
+void highlight();
 
 int main(int argc, char **argv) {
-	
-	
-	
-	
 	//TODO: create ending function, includes endwin() and return 0
 	
 	int rows, cols;
@@ -116,9 +114,8 @@ int main(int argc, char **argv) {
 	printregisters();
 
 	move(6, 8);
-
-	int curY, curX;
-	getyx(stdscr, curY, curX);
+	
+	getyx(stdscr, curY, curX);		// Get the cursor position and assign to curY, curX
 	int trysLeft = 4;
 	
 	while (1) {
@@ -142,17 +139,22 @@ int main(int argc, char **argv) {
 			default:
 				// LOSE
 				//TODO: notify user
+				erase();
+				mvprintw(1,1, "LOCKED OUT, PLEASE CONTACT AN ADMINISTRATOR.");
+				getch();
 				endwin();
 				return 0;
 		}
 
 		mvprintw(4, 1, "%i ATTEMPT(S) LEFT : ", trysLeft);
+		mvprintw(22, 41, ">");
+		
 		printinputarea();
 		printboard();
 		
 		move(curY, curX);
 		
-		highlight(curY, curX);
+		highlight();
 		
 		refresh();
 		
@@ -199,15 +201,6 @@ int main(int argc, char **argv) {
 				// if not at MAX, go to arraystartposition + WORDLENGTH + 1
 			// if key left
 				// if not at 0, go to arraystartposition of word - 1
-		
-		
-		
-		
-		// if (insideWord(curY, curX) >= 0) { //TODO: this is pretty messy
-// 			int here = insideWord(curY, curX);
-// 			curY = getYfromArray(here);
-// 			curX = getXfromArray(here);
-// 		}	
 	}
 
 	endwin();
@@ -224,7 +217,7 @@ void printregisters() {
 }
 
 void printinputarea() {
-	mvprintw(22, 41, ">DANGERS"); // example
+	mvprintw(22, 42, "DANGERS"); // example
 
 	int i;
 	for (i=0; i < MAX_MESSAGES; i++) {
@@ -236,7 +229,7 @@ void printinputarea() {
 void printboard() {
 	int i;
 	for (i = 0; i < 408; i++) { // iterate through each char in array
-		mvprintw(getYfromArray(i), getXfromArray(i), "%c", board[i]);
+		mvprintw(arraytoy(i), arraytox(i), "%c", board[i]);
 	}
 }
 
@@ -291,7 +284,7 @@ void addPasswordsToBoard() {
 	}
 }
 
-int curYXToArray(int y, int x) {
+int yxtoarray(int y, int x) {
 	//TODO: think about coordinate conversions earlier on in the program
 	if ( y >= 6 && y <= 22 ) {
 		y-=6; // convert y so y origin is 6
@@ -319,7 +312,7 @@ int curYXToArray(int y, int x) {
 	}
 }
 
-int getYfromArray(int a) { //TODO: combine these two functions using a "Point"
+int arraytoy(int a) { //TODO: combine these two functions using a "Point"
 	int startY = 6;
 	int reducer = 0;
 	if (a > 203)
@@ -327,7 +320,7 @@ int getYfromArray(int a) { //TODO: combine these two functions using a "Point"
 	return startY + ( ( a/12 ) ) - reducer;
 }
 
-int getXfromArray(int a) {
+int arraytox(int a) {
 	int startX = 8;
 	
 	if ( a <= 203 ) 						// left half
@@ -356,7 +349,7 @@ char genTrash() { //TODO: investigate deterministic behavior, trash is always th
 	return c;
 }
 
-void genPasswords() {
+void genPasswords() {					// Fill the passwords array with Passwords
 	//TODO: use passwordLength
 	int i;
 	for (i=0; i < NUM_PASSWORDS; i++) {
@@ -364,9 +357,9 @@ void genPasswords() {
 	}
 }
 
-int insideWord(int y, int x) { // if inside word, return array start position, else -1
+int insideWord() { // if inside word, return array start position, else -1
 	
-	int a = curYXToArray(y, x);
+	int a = yxtoarray(curY, curX);
 	
 	int i;
 	for (i = 0; i < NUM_PASSWORDS; i++) { // iterate through all words
@@ -378,16 +371,16 @@ int insideWord(int y, int x) { // if inside word, return array start position, e
 	return -1;
 }
 
-void highlight(int y, int x) {
+void highlight() {
 	
 	attron(A_STANDOUT);
 	
-	int a = curYXToArray(y, x);
+	int a = yxtoarray(curY, curX);
 	
-	if (insideWord(y, x) >= 0) {
-		a = insideWord(y, x);
+	if (insideWord() >= 0) {
+		a = insideWord();
 		while ( isalpha(board[a])  ) {
-			mvprintw( getYfromArray(a), getXfromArray(a), "%c", board[a]);
+			mvprintw( arraytoy(a), arraytox(a), "%c", board[a]);
 			a++;
 		}
 		attroff(A_STANDOUT);
