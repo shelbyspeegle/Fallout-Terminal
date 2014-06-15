@@ -16,7 +16,20 @@ I plan to flesh out this program in C, then write at least Ruby and C++ versions
 
 A goal of mine is to make the finished code extremely clean and readable.
 
-###Secret codes:
+##Usage:
+Compile with Make from project root:
+```
+$ make
+```
+
+Run program hackterm:
+```
+$ ./hackterm
+```
+
+Program will stay running until attempts are gone, or quit key is pressed (see secret codes section below for all special keys). ^Z or ^C also work just as well!
+
+##Secret codes:
 
 For aspects of the game that I have not implemented yet, I have in place keys that the user can press in order to achieve certain effects:
 
@@ -38,6 +51,7 @@ For aspects of the game that I have not implemented yet, I have in place keys th
 - Add capability of running a pseudo-terminal once game is complete.
 - - Access some kind of fun files.
 - Generate registers dynamically so every game is a little different.
+- Allow user to type in password if desired.
 
 
 #<a name="dependencies"></a>Dependencies
