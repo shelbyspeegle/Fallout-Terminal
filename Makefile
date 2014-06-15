@@ -2,12 +2,9 @@
 CC=gcc
 CFLAGS=-Wall -g -O
 LFLAGS=-lncurses
-PROGS=f3terminal hackterm
+PROGS=hackterm
 
 all: $(PROGS)
-
-f3terminal: f3terminal.o
-	$(CC) $(CFLAGS) -o $@ $^ $(LFLAGS)
 
 hackterm: hackterm.o
 	$(CC) $(CFLAGS) -o $@ $^ $(LFLAGS)
