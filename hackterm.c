@@ -18,7 +18,7 @@
 #define NUM_HACKS 5 //TODO: find the real number
 
 // Difficulty	Length
-// Very Eary	4-5
+// Very Easy	4-5
 // Easy			6-8
 // Average		9-10
 // Hard			11-12
@@ -26,7 +26,7 @@
 
 int passwordLength = 8; //TODO: make dynamic
 
-int passLocations[] = {0,12,24,36,48,60,72,84,96,108}; //TODO: make dynamic
+int passLocations[] = {0,21,55,79,111,175,220,270,300,390}; //TODO: make dynamic
 
 char *registers[] = {
 			"0xF964",
@@ -75,8 +75,10 @@ char genTrash();
 void genPasswords();
 int insideWord();
 void highlight();
+char *stringatcursor();
 
 int main(int argc, char **argv) {
+	
 	//TODO: create ending function, includes endwin() and return 0
 	
 	int rows, cols;
@@ -116,9 +118,7 @@ int main(int argc, char **argv) {
 				refresh();
 				mvprintw(4, 22, "#      ");
 				break;
-			default:
-				// LOSE
-				//TODO: notify user
+			default: // Game over
 				erase();
 				mvprintw(1,1, "LOCKED OUT, PLEASE CONTACT AN ADMINISTRATOR.");
 				getch();
@@ -137,7 +137,6 @@ int main(int argc, char **argv) {
 		highlight();
 		
 		refresh();
-		
 
 		int uInput = getch();	// Get user input from keyboard (pause)
 		usleep(10); 			// Reduces cursor jump if arrows are held down
@@ -217,7 +216,7 @@ void setup() {
 }
 
 void printinputarea() {
-	mvprintw(22, 42, "DANGERS"); // example
+	mvprintw(22, 42, "%s", stringatcursor()); // example
 
 	int i;
 	for (i=0; i < MAX_MESSAGES; i++) {
@@ -244,7 +243,7 @@ void pushmessage(const char *newMessage) {
 	messages[0] = fullMsg;
 }
 
-int tryPassword() { // Unimplemented
+int tryPassword() { //TODO: Unimplemented
 	// If hack
 		//pushmessage(hackContents);
 		//pushmessage("Dud removed.");
@@ -258,12 +257,18 @@ int tryPassword() { // Unimplemented
 		return -1;
 }
 
-void removeDud() {
+void removeDud() { //TODO: unimplemented.
 	pushmessage(">Dud removed.");
 	pushmessage(">[*(>]       ");
 }
 
 void addPasswordsToBoard() {
+	
+	//TODO: implement this
+	// Get total number of spaces in board
+	//  subtract WORD_LENGTH * NUM_PASSWORDS
+	// Divide by NUM_PASSWORDS = var
+	// Randomly place word between i * (from 0 to var-1-WORD_LENGTH)
 	
 	int currLocation;
 		
@@ -282,6 +287,8 @@ void addPasswordsToBoard() {
 			currLocation++;
 		}
 	}
+	
+	//TODO: Randomly place hacks here and there
 }
 
 int yxtoarray(int y, int x) {
@@ -329,7 +336,7 @@ int arraytox(int a) {
 		return ( a % 12 ) + startX + 20;
 }
 
-char genTrash() { //TODO: investigate deterministic behavior, trash is always the same
+char genTrash() { 	//TODO: Deterministic behavior, trash is always the same.
 	int min = 1;	// 31 possible chars i want to pick from randomly for trash.
 	int max = 31;
 	
@@ -349,8 +356,9 @@ char genTrash() { //TODO: investigate deterministic behavior, trash is always th
 	return c;
 }
 
-void genPasswords() {					// Fill the passwords array with Passwords
+void genPasswords() {			// Fill the passwords array with Passwords
 	//TODO: use passwordLength
+	//TODO: randomly pick words from list
 	int i;
 	for (i=0; i < NUM_PASSWORDS; i++) {
 		passwords[i] = "ABCDEFGH";
@@ -358,7 +366,6 @@ void genPasswords() {					// Fill the passwords array with Passwords
 }
 
 int insideWord() { // if inside word, return array start position, else -1
-	
 	int a = yxtoarray(curY, curX);
 	
 	int i;
@@ -372,7 +379,6 @@ int insideWord() { // if inside word, return array start position, else -1
 }
 
 void highlight() {
-	
 	attron(A_STANDOUT);
 	
 	int a = yxtoarray(curY, curX);
@@ -391,3 +397,20 @@ void highlight() {
 	attroff(A_STANDOUT);
 }
 
+char * stringatcursor() { //TODO: refactor heavily
+	if (insideWord() >= 0) {		// Cursor is in word.
+		return passwords[0]; //TODO this will only print the first password
+	} else {	// Cursor is on a single char.
+		char res = board[yxtoarray(curY, curX)];
+		char *returner = malloc(sizeof(char) * 15);
+		returner[0] = res;
+		int i;
+		for (i=1; i < 14; i++) {
+			returner[i] = ' ';
+		}
+		returner[14] = '\0';
+		return returner;
+	}
+	
+	return 0;
+}
