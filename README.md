@@ -2,13 +2,11 @@
 
 ---
 
-
 #Table of Contents
 
 - [Overview](#overview)
 - [To-Do](#to-do)
 - [Dependencies](#dependencies)
-
 
 #<a name="overview"></a>Overview
 
@@ -30,7 +28,6 @@ For aspects of the game that I have not implemented yet, I have in place keys th
 
 #<a name="to-do"></a>To-Do
 - Allow user to control experience from command line args.
-
 
 #<a name="dependencies"></a>Dependencies
 
