@@ -27,7 +27,18 @@ For aspects of the game that I have not implemented yet, I have in place keys th
 | '-' | Subtracts one attempt.                                  |
 
 #<a name="to-do"></a>To-Do
+- Generate random words of n length.
+- Generate and add bracket 'hacks'.
+- Randomly place objects on board.
+- Right arrow from highlighted word should move to next board space on same line.
 - Allow user to control experience from command line args.
+- - Option for user to type in terminal commands by themselves or have it autotype.
+- - Option for difficulty settings.
+- Implement terminal 'printout' effect.
+- Add capability of running a pseudo-terminal once game is complete.
+- - Access some kind of fun files.
+- Generate registers dynamically so every game is a little different.
+
 
 #<a name="dependencies"></a>Dependencies
 
