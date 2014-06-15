@@ -61,11 +61,10 @@ char **hacks;
 char **passwords;
 int curY, curX;
 
-
-void printregisters();
+void setup();
 void printinputarea();
 void printboard();
-void pushMessage(const char *newMessage);
+void pushmessage(const char *newMessage);
 int tryPassword();
 void removeDud();
 void addPasswordsToBoard();
@@ -94,28 +93,9 @@ int main(int argc, char **argv) {
 		printf("       minimum size of 24x56 to run.\n");
 		return 0;
 	}
-
 	
-	// Board Set-up ///////////////////////////////////////////////////////////
-	messages = malloc( sizeof(char*) * MAX_MESSAGES); //TODO: free
-	hacks = malloc( sizeof(char*) * NUM_PASSWORDS);   //TODO: free
-	passwords = malloc( sizeof(char*) * NUM_HACKS);   //TODO: free
-	mvprintw(1, 1, "ROBCO INDUSTRIES (TM) TERMLINK PROTOCOL\n ENTER PASSWORD NOW\n");
-
-	// add trash to board
-	int i;
-	for (i = 0; i < 408; i++) {
-		board[i] = genTrash();
-	}
+	setup();
 	
-	genPasswords();
-	addPasswordsToBoard();
-	
-	printregisters();
-
-	move(6, 8);
-	
-	getyx(stdscr, curY, curX);		// Get the cursor position and assign to curY, curX
 	int trysLeft = 4;
 	
 	while (1) {
@@ -158,9 +138,9 @@ int main(int argc, char **argv) {
 		
 		refresh();
 		
-		// getting user input from keyboard
-		int uInput = getch();
-		usleep(10); // Reduces cursor jump when arrows are held down
+
+		int uInput = getch();	// Get user input from keyboard (pause)
+		usleep(10); 			// Reduces cursor jump if arrows are held down
 		
 		switch (uInput) {
 		case KEY_UP :
@@ -207,9 +187,29 @@ int main(int argc, char **argv) {
 	return 0;
 }
 
-void printregisters() {
-	int numregisters = 17;
+void setup() {
+	
+	curY = 6; //TODO: think about defining 6,8 as START_X
+	curX = 8; //                              and START_Y
+	
+	// Board Set-up ////////////////////////////////////////////////////////////
+	messages = malloc( sizeof(char*) * MAX_MESSAGES); //TODO: free
+	hacks = malloc( sizeof(char*) * NUM_PASSWORDS);   //TODO: free
+	passwords = malloc( sizeof(char*) * NUM_HACKS);   //TODO: free
+	mvprintw(1, 1, "ROBCO INDUSTRIES (TM) TERMLINK PROTOCOL\n ENTER PASSWORD NOW\n");
+
+	// Populate Entire Board with Trash ////////////////////////////////////////
 	int i;
+	for (i = 0; i < 408; i++) {
+		board[i] = genTrash();
+	}
+	
+	genPasswords();
+	addPasswordsToBoard();
+	
+	// Print Registers /////////////////////////////////////////////////////////
+	int numregisters = 17;
+
 	for (i = 0; i < numregisters; i++) {
 		mvprintw(6+i, 1, "%s", registers[i]);
 		mvprintw(6+i, 21, "%s", registers[i+17]);
@@ -233,7 +233,7 @@ void printboard() {
 	}
 }
 
-void pushMessage(const char *newMessage) {
+void pushmessage(const char *newMessage) {
 	char *fullMsg = "             ";
 	fullMsg = (char*) newMessage;
 	
@@ -246,8 +246,8 @@ void pushMessage(const char *newMessage) {
 
 int tryPassword() { // Unimplemented
 	// If hack
-		//pushMessage(hackContents);
-		//pushMessage("Dud removed.");
+		//pushmessage(hackContents);
+		//pushmessage("Dud removed.");
 		//prints 2 lines
 	// If wrong password
 		// prints 3 lines
@@ -259,8 +259,8 @@ int tryPassword() { // Unimplemented
 }
 
 void removeDud() {
-	pushMessage(">Dud removed.");
-	pushMessage(">[*(>]       ");
+	pushmessage(">Dud removed.");
+	pushmessage(">[*(>]       ");
 }
 
 void addPasswordsToBoard() {
