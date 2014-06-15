@@ -1,4 +1,4 @@
-![RobCo Industries Unified Operating System Terminal](readme_assets/title.png "RobCo Industries Unified Operating System Terminal")
+![RobCo Industries Unified Operating System Terminal](readme_assets/title.png)
 
 ---
 
@@ -32,6 +32,3 @@ For aspects of the game that I have not implemented yet, I have in place keys th
 #<a name="dependencies"></a>Dependencies
 
 + [ncurses](http://www.gnu.org/software/ncurses/) - Great library for cursor management.
-
-
----
