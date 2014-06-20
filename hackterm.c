@@ -69,7 +69,7 @@ void printinputarea();
 void printboard();
 void pushmessage(const char *newMessage);
 int tryPassword();
-void removeDud();
+void removeDud(int a);
 void addPasswordsToBoard();
 int yxtoarray(int y, int x);
 int arraytoy(int a);
@@ -105,20 +105,26 @@ int main(int argc, char **argv) {
 	while (1) {
 		switch (trysLeft) {
 			case 4:
-				mvprintw(4, 22, "# # # #");
+			// Place the four symbols for tries left
+				attron(A_STANDOUT);
+				mvprintw(4, 22, " "); // 4th
+				mvprintw(4, 24, " "); // 3rd
+				mvprintw(4, 26, " "); // 2nd
+				mvprintw(4, 28, " "); // 1st
+				attroff(A_STANDOUT);
 				break;
 			case 3:
-				mvprintw(4, 22, "# # #  ");
+				mvprintw(4, 28, " "); // Erase the 4th symbol
 				break;
 			case 2:
-				mvprintw(4, 22, "# #    ");
+				mvprintw(4, 26, " "); // Erase the 3rd symbol
 				break;
 			case 1: // Lockout imminent
 				attron(A_BLINK); // eh blinkin'!
 				mvprintw(2, 1, "!!! WARNING: LOCKOUT IMMINENT !!!");
 				attroff(A_BLINK);
 				refresh();
-				mvprintw(4, 22, "#      ");
+				mvprintw(4, 24, " "); // Erase the 2nd symbol
 				break;
 			default: // Game over
 				erase();
@@ -166,7 +172,7 @@ int main(int argc, char **argv) {
 				curX++;
 			break;
 		case 'e' :
-			removeDud();
+			removeDud(0);
 			break;
 		case '-' :
 			trysLeft--;
@@ -224,6 +230,11 @@ void printinputarea() {
 	
 	mvtermtype(22, 42, stringatcursor());
 
+	attron(A_STANDOUT);
+	//TODO: print # after input, looking like a cursor
+	attroff(A_STANDOUT);
+	
+
 	int i;
 	for (i=0; i < MAX_MESSAGES; i++) {
 		if (messages[i])
@@ -279,7 +290,7 @@ int tryPassword() { //TODO: Unimplemented
 		return -1;
 }
 
-void removeDud() { //TODO: unimplemented.
+void removeDud(int a) { //TODO: unimplemented.
 	pushmessage(">Dud removed.");
 	pushmessage(">[*(>]       ");
 }
