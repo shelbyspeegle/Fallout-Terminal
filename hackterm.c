@@ -16,6 +16,8 @@
 #define MAX_MESSAGE_LENGTH 13
 #define NUM_PASSWORDS 10 // i think it is 17
 #define NUM_HACKS 5 //TODO: find the real number
+#define START_Y 6
+#define START_X 8
 
 // Difficulty	Length
 // Very Easy	4-5
@@ -25,7 +27,6 @@
 // Very Hard	13-15
 
 int passwordLength = 8; //TODO: make dynamic
-
 int passLocations[] = {0,21,55,79,111,175,220,270,300,390}; //TODO: make dynamic
 
 char *registers[] = {
@@ -53,13 +54,15 @@ char *registers[] = {
 			"0xFA0C", "0xFA18", "0xFA24"
 		};
 
-char **messages;							// Array of message strings.
-char board[408]; 							// Board of 408 chars.
-int hackLocations[NUM_HACKS];				// Series of array positions where the
-//int passLocations[NUM_PASSWORDS];			//   hacks and passwords lie on the board.
+char **messages;					// Array of message strings.
+char board[408]; 					// Board of 408 chars.
+int hackLocations[NUM_HACKS];		// Series of array positions where the
+//int passLocations[NUM_PASSWORDS];	// 	hacks and passwords lie on the board.
 char **hacks;
 char **passwords;
 int curY, curX;
+int trysLeft = 4;
+int correct;						// The index position of the right password
 
 void setup();
 void printinputarea();
@@ -76,6 +79,7 @@ void genPasswords();
 int insideWord();
 void highlight();
 char *stringatcursor();
+void mvtermtype(int y, int x, char *string);
 
 int main(int argc, char **argv) {
 	
@@ -97,8 +101,6 @@ int main(int argc, char **argv) {
 	}
 	
 	setup();
-	
-	int trysLeft = 4;
 	
 	while (1) {
 		switch (trysLeft) {
@@ -127,13 +129,11 @@ int main(int argc, char **argv) {
 		}
 
 		mvprintw(4, 1, "%i ATTEMPT(S) LEFT : ", trysLeft);
-		mvprintw(22, 41, ">");
 		
 		printinputarea();
 		printboard();
 		
 		move(curY, curX);
-		
 		highlight();
 		
 		refresh();
@@ -142,6 +142,9 @@ int main(int argc, char **argv) {
 		usleep(10); 			// Reduces cursor jump if arrows are held down
 		
 		switch (uInput) {
+		case '\n' :				//TODO: this may not work on all machines.
+			tryPassword();
+			break;
 		case KEY_UP :
 			if (curY != 6)
 				curY--;
@@ -187,11 +190,12 @@ int main(int argc, char **argv) {
 }
 
 void setup() {
-	
-	curY = 6; //TODO: think about defining 6,8 as START_X
-	curX = 8; //                              and START_Y
-	
 	// Board Set-up ////////////////////////////////////////////////////////////
+	
+	// Place cursor at starting position (board[0])
+	curY = START_Y;
+	curX = START_X;
+	
 	messages = malloc( sizeof(char*) * MAX_MESSAGES); //TODO: free
 	hacks = malloc( sizeof(char*) * NUM_PASSWORDS);   //TODO: free
 	passwords = malloc( sizeof(char*) * NUM_HACKS);   //TODO: free
@@ -216,12 +220,14 @@ void setup() {
 }
 
 void printinputarea() {
-	mvprintw(22, 42, "%s", stringatcursor()); // example
+	mvprintw(22, 41, ">");
+	
+	mvtermtype(22, 42, stringatcursor());
 
 	int i;
 	for (i=0; i < MAX_MESSAGES; i++) {
 		if (messages[i])
-			mvprintw(20-i, 41, "%s", messages[i]); // Only print messages that exist
+			mvprintw(20-i, 41, "%s", messages[i]); // Print messages that exist
 	}
 }
 
@@ -244,16 +250,32 @@ void pushmessage(const char *newMessage) {
 }
 
 int tryPassword() { //TODO: Unimplemented
+	
+	if (insideWord() >= 0) {
+		if (0 == correct) { //TODO: Get passlocations[] position from array pos
+			//TODO: access system
+		} else {
+			pushmessage( stringatcursor() );
+			pushmessage( "Entry denied" );
+			pushmessage( "0/5 Correct." );	//TODO: calculate how many correct.
+			trysLeft--;
+		}
+	} 
+	
+	// else if (insideHack() >= 0) {
+//
+// 	}
+	
+	
 	// If hack
 		//pushmessage(hackContents);
 		//pushmessage("Dud removed.");
 		//prints 2 lines
-	// If wrong password
-		// prints 3 lines
-			// WORD (in all caps)
-			// Entry denied
-			// 0/5 correct. (varies)
+	
 	// If trash
+		//TODO: what does trash do?
+	
+
 		return -1;
 }
 
@@ -359,10 +381,14 @@ char genTrash() { 	//TODO: Deterministic behavior, trash is always the same.
 void genPasswords() {			// Fill the passwords array with Passwords
 	//TODO: use passwordLength
 	//TODO: randomly pick words from list
+	
 	int i;
 	for (i=0; i < NUM_PASSWORDS; i++) {
 		passwords[i] = "ABCDEFGH";
 	}
+	
+	// pick from 0 to NUM_PASSWORDS-1 to be the correct password
+	correct = ( rand() % (NUM_PASSWORDS-1) ); // 0-NUMPASSWORDS-1
 }
 
 int insideWord() { // if inside word, return array start position, else -1
@@ -398,12 +424,11 @@ void highlight() {
 }
 
 char * stringatcursor() { //TODO: refactor heavily
-	if (insideWord() >= 0) {		// Cursor is in word.
+	if (insideWord() >= 0) { // Cursor is in word.
 		return passwords[0]; //TODO this will only print the first password
 	} else {	// Cursor is on a single char.
-		char res = board[yxtoarray(curY, curX)];
 		char *returner = malloc(sizeof(char) * 15);
-		returner[0] = res;
+		returner[0] = board[yxtoarray(curY, curX)];
 		int i;
 		for (i=1; i < 14; i++) {
 			returner[i] = ' ';
@@ -413,4 +438,14 @@ char * stringatcursor() { //TODO: refactor heavily
 	}
 	
 	return 0;
+}
+
+void mvtermtype(int y, int x, char *string) { // implement a thread or something
+	int i;
+	int len = strlen(string);
+	for (i=0; i < len; i++) {
+		mvprintw( y, x++, "%c", string[i]);
+		// usleep(80000); //TODO: bring this back
+		refresh();
+	}
 }
