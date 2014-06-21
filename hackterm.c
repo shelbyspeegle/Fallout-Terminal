@@ -271,7 +271,7 @@ int tryPassword() { //TODO: Unimplemented
 			pushmessage( stringatcursor() );
 			pushmessage( "Entry denied" );
 			char *check = malloc(sizeof(char *) * passwordLength);
-			check = "ABCDEFFFF"; //TODO: this is just a dummy
+			check = "ABCDEFFF"; //TODO: this is just a dummy
 			int i = numberofcorrectchars(check);
 			mvprintw(0,0, "%i", i); //TODO: this is also a dummy
 			pushmessage( "0/5 Correct." );	//TODO: calculate how many correct.
