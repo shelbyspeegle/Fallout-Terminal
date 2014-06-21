@@ -204,9 +204,9 @@ void setup() {
 	curY = START_Y;
 	curX = START_X;
 	
-	messages = malloc( sizeof(char**) * MAX_MESSAGES); //TODO: free
-	hacks = malloc( sizeof(char**) * NUM_PASSWORDS);   //TODO: free
-	passwords = malloc( sizeof(char**) * NUM_HACKS);   //TODO: free
+	messages = malloc( sizeof(char*) * MAX_MESSAGES); //TODO: free
+	hacks = malloc( sizeof(char*) * NUM_PASSWORDS);   //TODO: free
+	passwords = malloc( sizeof(char*) * NUM_HACKS);   //TODO: free
 	mvprintw(1, 1, "ROBCO INDUSTRIES (TM) TERMLINK PROTOCOL\n ENTER PASSWORD NOW\n");
 
 	// Populate Entire Board with Trash ////////////////////////////////////////
@@ -270,8 +270,8 @@ int tryPassword() { //TODO: Unimplemented
 		} else {
 			pushmessage( stringatcursor() );
 			pushmessage( "Entry denied" );
-			char *check = malloc(sizeof(char *) * passwordLength);
-			check = "ABCDEFFF"; //TODO: this is just a dummy
+			char *check = malloc(sizeof(char) * passwordLength);
+			check = "ABCDEFGH"; //TODO: this is just a dummy
 			int i = numberofcorrectchars(check);
 			mvprintw(0,0, "%i", i); //TODO: this is also a dummy
 			pushmessage( "0/5 Correct." );	//TODO: calculate how many correct.
@@ -476,7 +476,7 @@ int numberofcorrectchars(char *checkword) {
 	}
 	
 	int count = 0;
-	char *correctword = malloc(sizeof(char *) * passwordLength);
+	char *correctword = malloc(sizeof(char) * passwordLength);
 	correctword = passwords[correct];
 	
 	int i;
