@@ -26,9 +26,6 @@
 // Hard			11-12
 // Very Hard	13-15
 
-int passwordLength = 8; //TODO: make dynamic
-int passLocations[] = {0,21,55,79,111,175,220,270,300,390}; //TODO: make dynamic
-
 char *registers[] = {
 			"0xF964",
 			"0xF970",
@@ -54,15 +51,16 @@ char *registers[] = {
 			"0xFA0C", "0xFA18", "0xFA24"
 		};
 
-char **messages;					// Array of message strings.
-char board[408]; 					// Board of 408 chars.
-int hackLocations[NUM_HACKS];		// Series of array positions where the
-//int passLocations[NUM_PASSWORDS];	// 	hacks and passwords lie on the board.
+char **messages; // Array of message strings.
+char board[408]; // Board of 408 chars.
+int hackLocations[NUM_HACKS]; // Series of array positions where hacks are
+int passLocations[] = {0,21,55,79,111,175,220,270,300,390}; //TODO: make dynamic
+int passwordLength = 8; //TODO: make dynamic
 char **hacks;
 char **passwords;
 int curY, curX;
 int trysLeft = 4;
-int correct;						// The index position of the right password
+int correct; // The index position of the right password in passLocations[]
 
 void setup();
 void printinputarea();
@@ -80,6 +78,7 @@ int insideWord();
 void highlight();
 char *stringatcursor();
 void mvtermtype(int y, int x, char *string);
+int numberofcorrectchars(char *checkword);
 
 int main(int argc, char **argv) {
 	
@@ -131,6 +130,9 @@ int main(int argc, char **argv) {
 				mvprintw(1,1, "LOCKED OUT, PLEASE CONTACT AN ADMINISTRATOR.");
 				getch();
 				endwin();
+				// free(hacks);
+				// free(messages);
+				// free(passwords);
 				return 0;
 		}
 
@@ -202,9 +204,9 @@ void setup() {
 	curY = START_Y;
 	curX = START_X;
 	
-	messages = malloc( sizeof(char*) * MAX_MESSAGES); //TODO: free
-	hacks = malloc( sizeof(char*) * NUM_PASSWORDS);   //TODO: free
-	passwords = malloc( sizeof(char*) * NUM_HACKS);   //TODO: free
+	messages = malloc( sizeof(char**) * MAX_MESSAGES); //TODO: free
+	hacks = malloc( sizeof(char**) * NUM_PASSWORDS);   //TODO: free
+	passwords = malloc( sizeof(char**) * NUM_HACKS);   //TODO: free
 	mvprintw(1, 1, "ROBCO INDUSTRIES (TM) TERMLINK PROTOCOL\n ENTER PASSWORD NOW\n");
 
 	// Populate Entire Board with Trash ////////////////////////////////////////
@@ -264,10 +266,14 @@ int tryPassword() { //TODO: Unimplemented
 	
 	if (insideWord() >= 0) {
 		if (0 == correct) { //TODO: Get passlocations[] position from array pos
-			//TODO: access system
+			pushmessage( "Winner!" );				//TODO: access system
 		} else {
 			pushmessage( stringatcursor() );
 			pushmessage( "Entry denied" );
+			char *check = malloc(sizeof(char *) * passwordLength);
+			check = "ABCDEFFFF"; //TODO: this is just a dummy
+			int i = numberofcorrectchars(check);
+			mvprintw(0,0, "%i", i); //TODO: this is also a dummy
 			pushmessage( "0/5 Correct." );	//TODO: calculate how many correct.
 			trysLeft--;
 		}
@@ -459,4 +465,26 @@ void mvtermtype(int y, int x, char *string) { // implement a thread or something
 		// usleep(80000); //TODO: bring this back
 		refresh();
 	}
+}
+
+int numberofcorrectchars(char *checkword) {
+	if (strlen(checkword) != passwordLength) {
+		//TODO: properly free and end the program!
+		endwin();
+		fprintf(stderr, "ERROR: numberofcorrectchars called on string of length %i when passwords are of length %i.\n", (int)strlen(checkword), passwordLength);
+		exit(1);
+	}
+	
+	int count = 0;
+	char *correctword = malloc(sizeof(char *) * passwordLength);
+	correctword = passwords[correct];
+	
+	int i;
+	for (i=0; i < passwordLength; i++) {
+		if (correctword[i] == checkword[i]) {
+			count++;
+		}
+	}
+
+return count;
 }
