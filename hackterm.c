@@ -159,6 +159,7 @@ int main(int argc, char **argv) {
 		refresh();
 		
 		if (loggedin) {
+			//TODO: blink cursor 4 times
 			getch(); //TODO: remove this when accesssystem works
 			accesssystem();
 		}
@@ -307,8 +308,6 @@ boolean tryPassword() {
 			pushmessage( "Please wait" );
 			pushmessage( "while system" );
 			pushmessage( "is accessed." );
-			refresh();
-			//TODO: blink cursor 4 times
 			
 			//free(check)
 
@@ -535,6 +534,7 @@ int numberofcorrectchars(const char *checkword) {
 }
 
 void accesssystem() { //TODO: unimplemented
+	// clear
 	//Print "WELCOME TO ROBCO INDUSTRIES (TM) TERMLINK"
 	
 	//Print "> LOGIN ADMIN"
