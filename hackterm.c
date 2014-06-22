@@ -20,6 +20,10 @@
 #define START_Y 6
 #define START_X 8
 
+typedef int boolean;
+#define TRUE 1
+#define FALSE 0
+
 // Difficulty	Length
 // Very Easy	4-5
 // Easy			6-8
@@ -67,7 +71,7 @@ void setup();
 void printinputarea();
 void printboard();
 void pushmessage(const char *newMessage);
-int tryPassword();
+boolean tryPassword();
 void removeDud(int a);
 void addPasswordsToBoard();
 int yxtoarray(int y, int x);
@@ -106,7 +110,7 @@ int main(int argc, char **argv) {
 	
 	setup();
 	
-	int b = 0;
+	boolean loggedin = FALSE;
 	
 	while (1) {
 		
@@ -154,7 +158,7 @@ int main(int argc, char **argv) {
 		
 		refresh();
 		
-		if (b) {
+		if (loggedin) {
 			getch(); //TODO: remove this when accesssystem works
 			accesssystem();
 		}
@@ -164,7 +168,7 @@ int main(int argc, char **argv) {
 		
 		switch (uInput) {
 		case '\n' :				//TODO: this may not work on all machines.
-			b = tryPassword();
+			loggedin = tryPassword();
 			break;
 		case KEY_UP :
 			if (curY != 6)
@@ -286,7 +290,7 @@ void pushmessage(const char *newMessage) {
 	messages[0] = fullMsg;
 }
 
-int tryPassword() {
+boolean tryPassword() {
 	if (insideWord() >= 0) {
 		int k = insideWord(); // start of the word
 		char *check = malloc(sizeof(char) * passwordLength);
@@ -308,7 +312,7 @@ int tryPassword() {
 			
 			//free(check)
 
-			return 1; //TRUE
+			return TRUE; //TRUE
 		} else {
 			pushmessage( "Entry denied" );
 			char *stringbuild = malloc(sizeof(char) * MAX_MESSAGE_LENGTH);
