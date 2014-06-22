@@ -11,6 +11,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
+#include <time.h> // for srand(time(NULL))
 
 #define MAX_MESSAGES 15
 #define MAX_MESSAGE_LENGTH 13
@@ -78,11 +79,13 @@ int insideWord();
 void highlight();
 char *stringatcursor();
 void mvtermtype(int y, int x, char *string);
-int numberofcorrectchars(char *checkword);
+int numberofcorrectchars(const char *checkword);
 
 int main(int argc, char **argv) {
 	
 	//TODO: create ending function, includes endwin() and return 0
+		
+	srand(time(0)); // Seed rand with this so it is more random
 	
 	int rows, cols;
 	
@@ -263,37 +266,32 @@ void pushmessage(const char *newMessage) {
 }
 
 int tryPassword() { //TODO: Unimplemented
-	
 	if (insideWord() >= 0) {
-		if (0 == correct) { //TODO: Get passlocations[] position from array pos
+		if (correct == 0) { //TODO: Get passlocations[] position from array pos
 			pushmessage( "Winner!" );				//TODO: access system
 		} else {
 			pushmessage( stringatcursor() );
 			pushmessage( "Entry denied" );
-			char *check = malloc(sizeof(char) * passwordLength);
+			
+			char *check = malloc(sizeof(char) * passwordLength + 1);
 			check = "ABCDEFGH"; //TODO: this is just a dummy
 			int i = numberofcorrectchars(check);
-			mvprintw(0,0, "%i", i); //TODO: this is also a dummy
-			pushmessage( "0/5 Correct." );	//TODO: calculate how many correct.
+
+			char *stringbuild = malloc(sizeof(char) * MAX_MESSAGE_LENGTH);
+			sprintf(stringbuild, "%i/%i Correct.", i, passwordLength);
+			pushmessage( stringbuild );
 			trysLeft--;
 		}
-	} 
-	
+	}
 	// else if (insideHack() >= 0) {
-//
-// 	}
-	
-	
-	// If hack
-		//pushmessage(hackContents);
-		//pushmessage("Dud removed.");
-		//prints 2 lines
-	
+	// 	pushmessage(hackContents);
+	// 	pushmessage("Dud removed.");
+	// 	prints 2 lines
+	// 	}
 	// If trash
-		//TODO: what does trash do?
-	
+	// 	TODO: what does trash do?
 
-		return -1;
+	return -1;
 }
 
 void removeDud(int a) { //TODO: unimplemented.
@@ -309,15 +307,15 @@ void addPasswordsToBoard() {
 	// Divide by NUM_PASSWORDS = var
 	// Randomly place word between i * (from 0 to var-1-WORD_LENGTH)
 	
-	int currLocation;
-		
+	
+	// At each passLocation copy a password
+	int currLocation = 0;
 	int i;
 	for ( i = 0; i < NUM_PASSWORDS; i++ ) {
 		currLocation = passLocations[i];
-		// starting at hackLocation, copy each password to the board, char by char
+		
 		char *s = passwords[i];
 		char c;
-		
 		int j = 0;
 		while ( (c = s[j]) ) {
 			board[currLocation] = c;
@@ -375,7 +373,7 @@ int arraytox(int a) {
 		return ( a % 12 ) + startX + 20;
 }
 
-char genTrash() { 	//TODO: Deterministic behavior, trash is always the same.
+char genTrash() {
 	int min = 1;	// 31 possible chars i want to pick from randomly for trash.
 	int max = 31;
 	
@@ -399,13 +397,30 @@ void genPasswords() {			// Fill the passwords array with Passwords
 	//TODO: use passwordLength
 	//TODO: randomly pick words from list
 	
-	int i;
-	for (i=0; i < NUM_PASSWORDS; i++) {
-		passwords[i] = "ABCDEFGH";
-	}
+	// int i;
+	// for (i=0; i < NUM_PASSWORDS; i++) {
+	passwords[0] = "ABCDEFGH";
+	passwords[1] = "BBCDEFGH";
+	passwords[2] = "CBCDEFGH";
+	passwords[3] = "DBCDEFGH";
+	passwords[4] = "EBCDEFGH";
+	passwords[5] = "FBCDEFGH";								
+	passwords[6] = "GBCDEFGH";
+	passwords[6] = "HBCDEFGH";
+	passwords[7] = "IBCDEFGH";
+	passwords[8] = "JBCDEFGH";
+	passwords[9] = "KBCDEFGH";
+	// }
 	
-	// pick from 0 to NUM_PASSWORDS-1 to be the correct password
-	correct = ( rand() % (NUM_PASSWORDS-1) ); // 0-NUMPASSWORDS-1
+	// int max = NUM_PASSWORDS-1;
+	// int min = 0;
+	// 
+	// correct = ( rand() % (max+1-min) ) + min; // 0, NUM_PASSWORDS-1
+	correct = 6;
+	// Bad numbers?
+	// 6, 7, 8, 9,
+	
+	mvprintw(0,10, "%i", correct);
 }
 
 int insideWord() { // if inside word, return array start position, else -1
@@ -457,7 +472,7 @@ char * stringatcursor() { //TODO: refactor heavily
 	return 0;
 }
 
-void mvtermtype(int y, int x, char *string) { // implement a thread or something
+void mvtermtype(int y, int x, char *string) { //TODO implement a thread
 	int i;
 	int len = strlen(string);
 	for (i=0; i < len; i++) {
@@ -467,24 +482,33 @@ void mvtermtype(int y, int x, char *string) { // implement a thread or something
 	}
 }
 
-int numberofcorrectchars(char *checkword) {
+int numberofcorrectchars(const char *checkword) {
+	
 	if (strlen(checkword) != passwordLength) {
-		//TODO: properly free and end the program!
+		//TODO: properly free and end the program
 		endwin();
 		fprintf(stderr, "ERROR: numberofcorrectchars called on string of length %i when passwords are of length %i.\n", (int)strlen(checkword), passwordLength);
 		exit(1);
 	}
 	
 	int count = 0;
-	char *correctword = malloc(sizeof(char) * passwordLength);
-	correctword = passwords[correct];
+	char correctword[50];
 	
-	int i;
-	for (i=0; i < passwordLength; i++) {
-		if (correctword[i] == checkword[i]) {
-			count++;
-		}
-	}
+	clear();
+	endwin();
+	printf("%s %i", passwords[correct], correct); // (null) at 6+
+	exit(1);
+	// strcpy(correctword, passwords[correct]);
+	
+	mvprintw(1,42, "%s", checkword);
+	mvprintw(2,42, "%s %i", "passwords[correct]", correct); // (null) at 6+
+	
+	// int i;
+// 	for (i=0; i < passwordLength; i++) {
+// 		if (correctword[i] == checkword[i]) {
+// 			count++;
+// 		}
+// 	}
 
-return count;
+	return count;
 }
