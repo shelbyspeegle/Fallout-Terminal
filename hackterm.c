@@ -80,6 +80,8 @@ void highlight();
 char *stringatcursor();
 void mvtermtype(int y, int x, char *string);
 int numberofcorrectchars(const char *checkword);
+void accesssystem();
+void exituos();
 
 int main(int argc, char **argv) {
 	
@@ -104,7 +106,10 @@ int main(int argc, char **argv) {
 	
 	setup();
 	
+	int b = 0;
+	
 	while (1) {
+		
 		switch (trysLeft) {
 			case 4:
 			// Place the four symbols for tries left
@@ -148,13 +153,18 @@ int main(int argc, char **argv) {
 		highlight();
 		
 		refresh();
+		
+		if (b) {
+			getch(); //TODO: remove this when accesssystem works
+			accesssystem();
+		}
 
 		int uInput = getch();	// Get user input from keyboard (pause)
 		usleep(10); 			// Reduces cursor jump if arrows are held down
 		
 		switch (uInput) {
 		case '\n' :				//TODO: this may not work on all machines.
-			tryPassword();
+			b = tryPassword();
 			break;
 		case KEY_UP :
 			if (curY != 6)
@@ -195,9 +205,7 @@ int main(int argc, char **argv) {
 			// if key left
 				// if not at 0, go to arraystartposition of word - 1
 	}
-
-	endwin();
-	return 0;
+	exituos();
 }
 
 void setup() {
@@ -207,9 +215,9 @@ void setup() {
 	curY = START_Y;
 	curX = START_X;
 	
-	messages = malloc( sizeof(char*) * MAX_MESSAGES); //TODO: free
-	hacks = malloc( sizeof(char*) * NUM_PASSWORDS);   //TODO: free
-	passwords = malloc( sizeof(char*) * NUM_HACKS);   //TODO: free
+	messages = malloc( sizeof(char*) * MAX_MESSAGES);		//TODO: free
+	hacks = malloc( sizeof(char*) * NUM_HACKS);				//TODO: free
+	passwords = malloc( sizeof(char*) * NUM_PASSWORDS );	//TODO: free
 	mvprintw(1, 1, "ROBCO INDUSTRIES (TM) TERMLINK PROTOCOL\n ENTER PASSWORD NOW\n");
 
 	// Populate Entire Board with Trash ////////////////////////////////////////
@@ -255,8 +263,21 @@ void printboard() {
 }
 
 void pushmessage(const char *newMessage) {
-	char *fullMsg = "             ";
-	fullMsg = (char*) newMessage;
+	char *fullMsg = malloc(sizeof(char) * MAX_MESSAGE_LENGTH + 1);
+	
+	// Start the message off with a '>'
+	fullMsg[0] = '>';
+	
+	// Copy all of the contents of the passed in string
+	int k;
+	for (k=1; k<strlen(newMessage)+1; k++) {
+		fullMsg[k] = newMessage[k-1];
+	}
+	
+	// Fill the rest of the string with spaces
+	while (k < MAX_MESSAGE_LENGTH) {
+		fullMsg[k++] = ' ';
+	}
 	
 	int i;
 	for (i=0; i < MAX_MESSAGES; i++) {
@@ -265,24 +286,39 @@ void pushmessage(const char *newMessage) {
 	messages[0] = fullMsg;
 }
 
-int tryPassword() { //TODO: Unimplemented
+int tryPassword() {
 	if (insideWord() >= 0) {
-		if (correct == 0) { //TODO: Get passlocations[] position from array pos
-			pushmessage( "Winner!" );				//TODO: access system
-		} else {
-			pushmessage( stringatcursor() );
-			pushmessage( "Entry denied" );
-			
-			char *check = malloc(sizeof(char) * passwordLength + 1);
-			check = "ABCDEFGH"; //TODO: this is just a dummy
-			int i = numberofcorrectchars(check);
+		int k = insideWord(); // start of the word
+		char *check = malloc(sizeof(char) * passwordLength);
+		int j;
+		for (j=0; j<passwordLength; j++) {
+			check[j] = board[k++];
+		};
+		
+		pushmessage( stringatcursor() );
 
+		int i = numberofcorrectchars(check);
+		if (i == passwordLength) {
+			pushmessage( "Exact match!" );
+			pushmessage( "Please wait" );
+			pushmessage( "while system" );
+			pushmessage( "is accessed." );
+			refresh();
+			//TODO: blink cursor 4 times
+			
+			//free(check)
+
+			return 1; //TRUE
+		} else {
+			pushmessage( "Entry denied" );
 			char *stringbuild = malloc(sizeof(char) * MAX_MESSAGE_LENGTH);
-			sprintf(stringbuild, "%i/%i Correct.", i, passwordLength);
+			sprintf(stringbuild, "%i/%i correct.", i, passwordLength);
 			pushmessage( stringbuild );
 			trysLeft--;
 		}
 	}
+	//TODO: test for hacks and trash
+	
 	// else if (insideHack() >= 0) {
 	// 	pushmessage(hackContents);
 	// 	pushmessage("Dud removed.");
@@ -291,12 +327,12 @@ int tryPassword() { //TODO: Unimplemented
 	// If trash
 	// 	TODO: what does trash do?
 
-	return -1;
+	return 0;
 }
 
 void removeDud(int a) { //TODO: unimplemented.
 	pushmessage(">Dud removed.");
-	pushmessage(">[*(>]       ");
+	pushmessage(">[*(>]");
 }
 
 void addPasswordsToBoard() {
@@ -306,7 +342,6 @@ void addPasswordsToBoard() {
 	//  subtract WORD_LENGTH * NUM_PASSWORDS
 	// Divide by NUM_PASSWORDS = var
 	// Randomly place word between i * (from 0 to var-1-WORD_LENGTH)
-	
 	
 	// At each passLocation copy a password
 	int currLocation = 0;
@@ -397,8 +432,6 @@ void genPasswords() {			// Fill the passwords array with Passwords
 	//TODO: use passwordLength
 	//TODO: randomly pick words from list
 	
-	// int i;
-	// for (i=0; i < NUM_PASSWORDS; i++) {
 	passwords[0] = "ABCDEFGH";
 	passwords[1] = "BBCDEFGH";
 	passwords[2] = "CBCDEFGH";
@@ -410,17 +443,11 @@ void genPasswords() {			// Fill the passwords array with Passwords
 	passwords[7] = "IBCDEFGH";
 	passwords[8] = "JBCDEFGH";
 	passwords[9] = "KBCDEFGH";
-	// }
 	
 	// int max = NUM_PASSWORDS-1;
 	// int min = 0;
-	// 
 	// correct = ( rand() % (max+1-min) ) + min; // 0, NUM_PASSWORDS-1
-	correct = 6;
-	// Bad numbers?
-	// 6, 7, 8, 9,
-	
-	mvprintw(0,10, "%i", correct);
+	correct = 0;
 }
 
 int insideWord() { // if inside word, return array start position, else -1
@@ -485,30 +512,44 @@ void mvtermtype(int y, int x, char *string) { //TODO implement a thread
 int numberofcorrectchars(const char *checkword) {
 	
 	if (strlen(checkword) != passwordLength) {
-		//TODO: properly free and end the program
+		//TODO: properly free memory and end the program
 		endwin();
 		fprintf(stderr, "ERROR: numberofcorrectchars called on string of length %i when passwords are of length %i.\n", (int)strlen(checkword), passwordLength);
 		exit(1);
 	}
 	
 	int count = 0;
-	char correctword[50];
 	
-	clear();
-	endwin();
-	printf("%s %i", passwords[correct], correct); // (null) at 6+
-	exit(1);
-	// strcpy(correctword, passwords[correct]);
-	
-	mvprintw(1,42, "%s", checkword);
-	mvprintw(2,42, "%s %i", "passwords[correct]", correct); // (null) at 6+
-	
-	// int i;
-// 	for (i=0; i < passwordLength; i++) {
-// 		if (correctword[i] == checkword[i]) {
-// 			count++;
-// 		}
-// 	}
+	int i;
+	for (i=0; i < passwordLength; i++) {
+		if (passwords[correct][i] == checkword[i]) {
+			count++;
+		}
+	}
 
 	return count;
+}
+
+void accesssystem() { //TODO: unimplemented
+	//Print "WELCOME TO ROBCO INDUSTRIES (TM) TERMLINK"
+	
+	//Print "> LOGIN ADMIN"
+	
+	// "ENTER PASSWORD NOW"
+	
+	// "********" (passwordLength)
+	
+	//clear();
+	
+	//Centered "ROBCO INDUSTRIES UNIFIED OPERATING SYSTEM"
+	//           "COPYRIGHT 2075-2077 ROBCO INDUSTRIES"
+	//                         "Server 6"
+	
+	exituos();
+}
+
+void exituos() {
+	//free all alloc'ed memory
+	endwin(); // End ncurses mode
+	exit(0);  // Exit with success error code
 }
