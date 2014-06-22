@@ -32,29 +32,15 @@ typedef int boolean;
 // Very Hard	13-15
 
 char *registers[] = {
-			"0xF964",
-			"0xF970",
-			"0xF97C",
-			"0xF988",
-			"0xF994",
-			"0xF9A0",
-			"0xF9AC",
-			"0xF9B8",
-			"0xF9C4",
-			"0xF9D0",
-			"0xF9DC",
-			"0xF9E8",
-			"0xF9F4",
-			"0xFA00",
-			"0xFA0C",
-			"0xFA18",
-			"0xFA24",
+	"0xF964", "0xF970", "0xF97C", "0xF988", "0xF994", "0xF9A0", "0xF9AC",
+	"0xF9B8", "0xF9C4", "0xF9D0", "0xF9DC", "0xF9E8", "0xF9F4", "0xFA00",
+	"0xFA0C", "0xFA18", "0xFA24",
 
-			// Repeat of the first 17 //TODO: replace with real registers
-			"0xF964", "0xF970", "0xF97C", "0xF988", "0xF994", "0xF9A0", "0xF9AC", 
-			"0xF9B8", "0xF9C4", "0xF9D0", "0xF9DC", "0xF9E8", "0xF9F4", "0xFA00", 
-			"0xFA0C", "0xFA18", "0xFA24"
-		};
+	// Repeat of the first 17 //TODO: replace with real registers
+	"0xF964", "0xF970", "0xF97C", "0xF988", "0xF994", "0xF9A0", "0xF9AC", 
+	"0xF9B8", "0xF9C4", "0xF9D0", "0xF9DC", "0xF9E8", "0xF9F4", "0xFA00", 
+	"0xFA0C", "0xFA18", "0xFA24"
+};
 
 char **messages; // Array of message strings.
 char board[408]; // Board of 408 chars.
@@ -73,7 +59,6 @@ void printboard();
 void pushmessage(const char *newMessage);
 boolean tryPassword();
 void removeDud(int a);
-void addPasswordsToBoard();
 int yxtoarray(int y, int x);
 int arraytoy(int a);
 int arraytox(int a);
@@ -88,9 +73,7 @@ void accesssystem();
 void exituos();
 
 int main(int argc, char **argv) {
-	
-	//TODO: create ending function, includes endwin() and return 0
-		
+
 	srand(time(0)); // Seed rand with this so it is more random
 	
 	int rows, cols;
@@ -141,21 +124,14 @@ int main(int argc, char **argv) {
 				erase();
 				mvprintw(1,1, "LOCKED OUT, PLEASE CONTACT AN ADMINISTRATOR.");
 				getch();
-				endwin();
-				// free(hacks);
-				// free(messages);
-				// free(passwords);
-				return 0;
+				exituos();
 		}
 
 		mvprintw(4, 1, "%i ATTEMPT(S) LEFT : ", trysLeft);
-		
 		printinputarea();
 		printboard();
-		
 		move(curY, curX);
 		highlight();
-		
 		refresh();
 		
 		if (loggedin) {
@@ -197,9 +173,11 @@ int main(int argc, char **argv) {
 		case '-' :
 			trysLeft--;
 			break;
+		case 'a' :
+			accesssystem();
+			break;
 		case 'q' : // Quit key
-			endwin();
-			return 0;
+			exituos();
 		default:
 			break;
 		}
@@ -232,7 +210,6 @@ void setup() {
 	}
 	
 	genPasswords();
-	addPasswordsToBoard();
 	
 	// Print Registers /////////////////////////////////////////////////////////
 	int numregisters = 17;
@@ -338,34 +315,6 @@ void removeDud(int a) { //TODO: unimplemented.
 	pushmessage(">[*(>]");
 }
 
-void addPasswordsToBoard() {
-	
-	//TODO: implement this
-	// Get total number of spaces in board
-	//  subtract WORD_LENGTH * NUM_PASSWORDS
-	// Divide by NUM_PASSWORDS = var
-	// Randomly place word between i * (from 0 to var-1-WORD_LENGTH)
-	
-	// At each passLocation copy a password
-	int currLocation = 0;
-	int i;
-	for ( i = 0; i < NUM_PASSWORDS; i++ ) {
-		currLocation = passLocations[i];
-		
-		char *s = passwords[i];
-		char c;
-		int j = 0;
-		while ( (c = s[j]) ) {
-			board[currLocation] = c;
-			
-			j++;
-			currLocation++;
-		}
-	}
-	
-	//TODO: Randomly place hacks here and there
-}
-
 int yxtoarray(int y, int x) {
 	//TODO: think about coordinate conversions earlier on in the program
 	if ( y >= 6 && y <= 22 ) {
@@ -447,10 +396,34 @@ void genPasswords() {			// Fill the passwords array with Passwords
 	passwords[8] = "JBCDEFGH";
 	passwords[9] = "KBCDEFGH";
 	
-	// int max = NUM_PASSWORDS-1;
-	// int min = 0;
-	// correct = ( rand() % (max+1-min) ) + min; // 0, NUM_PASSWORDS-1
-	correct = 0;
+	int max = NUM_PASSWORDS-1;
+	int min = 0;
+	correct = ( rand() % (max+1-min) ) + min; // 0, NUM_PASSWORDS-1
+	
+	//TODO: implement this
+	// Get total number of spaces in board
+	//  subtract WORD_LENGTH * NUM_PASSWORDS
+	// Divide by NUM_PASSWORDS = var
+	// Randomly place word between i * (from 0 to var-1-WORD_LENGTH)
+	
+	// At each passLocation copy a password
+	int currLocation = 0;
+	int i;
+	for ( i = 0; i < NUM_PASSWORDS; i++ ) {
+		currLocation = passLocations[i];
+		
+		char *s = passwords[i];
+		char c;
+		int j = 0;
+		while ( (c = s[j]) ) {
+			board[currLocation] = c;
+			
+			j++;
+			currLocation++;
+		}
+	}
+	
+	//TODO: Randomly place hacks here and there
 }
 
 int insideWord() { // if inside word, return array start position, else -1
@@ -554,6 +527,10 @@ void accesssystem() { //TODO: unimplemented
 
 void exituos() {
 	//free all alloc'ed memory
+		// free(hacks);
+		// free(messages);
+		// free(passwords);
+	
 	endwin(); // End ncurses mode
 	exit(0);  // Exit with success error code
 }
