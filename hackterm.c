@@ -24,6 +24,12 @@ typedef int boolean;
 #define TRUE 1
 #define FALSE 0
 
+struct point {
+	int y;
+	int x;
+};
+typedef struct point Point;
+
 // Difficulty	Length
 // Very Easy	4-5
 // Easy			6-8
@@ -49,9 +55,10 @@ int passLocations[] = {0,21,55,79,111,175,220,270,300,390}; //TODO: make dynamic
 int passwordLength = 8; //TODO: make dynamic
 char **hacks;
 char **passwords;
-int curY, curX;
+int rows, cols;
 int trysLeft = 4;
 int correct; // The index position of the right password in passLocations[]
+Point cur;
 
 void setup();
 void printinputarea();
@@ -59,6 +66,7 @@ void printboard();
 void pushmessage(const char *newMessage);
 boolean tryPassword();
 void removeDud(int a);
+void addPasswordsToBoard();
 int yxtoarray(int y, int x);
 int arraytoy(int a);
 int arraytox(int a);
@@ -76,19 +84,19 @@ int main(int argc, char **argv) {
 
 	srand(time(0)); // Seed rand with this so it is more random
 	
-	int rows, cols;
-	
 	initscr();						// start the curses mode
 	noecho();						// silence user input
 	getmaxyx(stdscr,rows,cols);		// get the number of rows and columns
 	keypad(stdscr, TRUE);			// converts arrow key input to usable chars
 	curs_set(0);					// This hides the ncurses cursor
 
-	if (rows < 24 || cols < 56) {	// Check to see if window is big enough
+	if (rows < 24 || cols < 55) {	// Check to see if window is big enough
 		endwin();
 		printf("ERROR: Terminal window is too small,\n");
-		printf("       minimum size of 24x56 to run.\n");
+		printf("       minimum size of 24x55 to run.\n");
 		return 0;
+		
+		//53 for play area, +1 on each side for padding
 	}
 	
 	setup();
@@ -101,17 +109,24 @@ int main(int argc, char **argv) {
 			case 4:
 			// Place the four symbols for tries left
 				attron(A_STANDOUT);
-				mvprintw(4, 22, " "); // 4th
-				mvprintw(4, 24, " "); // 3rd
-				mvprintw(4, 26, " "); // 2nd
-				mvprintw(4, 28, " "); // 1st
+				mvprintw(4, 22, " "); // 1st
+				mvprintw(4, 24, " "); // 2nd
+				mvprintw(4, 26, " "); // 3rd
+				mvprintw(4, 28, " "); // 4th
 				attroff(A_STANDOUT);
 				break;
 			case 3:
 				mvprintw(4, 28, " "); // Erase the 4th symbol
+				attron(A_STANDOUT);
+				mvprintw(4, 26, " "); // 3rd
+				attroff(A_STANDOUT);
 				break;
 			case 2:
 				mvprintw(4, 26, " "); // Erase the 3rd symbol
+				attron(A_STANDOUT);
+				mvprintw(4, 24, " "); // 2nd
+				attroff(A_STANDOUT);
+				mvprintw(2, 1, "                                 ");
 				break;
 			case 1: // Lockout imminent
 				attron(A_BLINK); // eh blinkin'!
@@ -130,7 +145,7 @@ int main(int argc, char **argv) {
 		mvprintw(4, 1, "%i ATTEMPT(S) LEFT : ", trysLeft);
 		printinputarea();
 		printboard();
-		move(curY, curX);
+		move(cur.y, cur.x);
 		highlight();
 		refresh();
 		
@@ -144,28 +159,28 @@ int main(int argc, char **argv) {
 		usleep(10); 			// Reduces cursor jump if arrows are held down
 		
 		switch (uInput) {
-		case '\n' :				//TODO: this may not work on all machines.
+		case '\n' :				//TODO: test Linux
 			loggedin = tryPassword();
 			break;
 		case KEY_UP :
-			if (curY != 6)
-				curY--;
+			if (cur.y != 6)
+				cur.y--;
 			break;
 		case KEY_LEFT :
-			if (curX == 28)
-				curX = 19;
-			else if (curX != 8)
-				curX--;
+			if (cur.x == 28)
+				cur.x = 19;
+			else if (cur.x != 8)
+				cur.x--;
 			break;
 		case KEY_DOWN :
-			if (curY != 22)
-				curY++;
+			if (cur.y != 22)
+				cur.y++;
 			break;
 		case KEY_RIGHT :
-			if (curX == 19)
-				curX = 28;
-			else if (curX != 39)
-				curX++;
+			if (cur.x == 19)
+				cur.x = 28;
+			else if (cur.x != 39)
+				cur.x++;
 			break;
 		case 'e' :
 			removeDud(0);
@@ -173,7 +188,13 @@ int main(int argc, char **argv) {
 		case '-' :
 			trysLeft--;
 			break;
+		case '+' :
+			if (trysLeft < 4) {
+				trysLeft++;
+			}
+			break;
 		case 'a' :
+			getch();
 			accesssystem();
 			break;
 		case 'q' : // Quit key
@@ -195,13 +216,14 @@ void setup() {
 	// Board Set-up ////////////////////////////////////////////////////////////
 	
 	// Place cursor at starting position (board[0])
-	curY = START_Y;
-	curX = START_X;
+	cur.y = START_Y;
+	cur.x = START_X;
 	
 	messages = malloc( sizeof(char*) * MAX_MESSAGES);		//TODO: free
 	hacks = malloc( sizeof(char*) * NUM_HACKS);				//TODO: free
 	passwords = malloc( sizeof(char*) * NUM_PASSWORDS );	//TODO: free
-	mvprintw(1, 1, "ROBCO INDUSTRIES (TM) TERMLINK PROTOCOL\n ENTER PASSWORD NOW\n");
+	mvprintw(1, 1, "ROBCO INDUSTRIES (TM) TERMLINK PROTOCOL");
+	mvprintw(2, 1, "ENTER PASSWORD NOW");
 
 	// Populate Entire Board with Trash ////////////////////////////////////////
 	int i;
@@ -221,9 +243,11 @@ void setup() {
 }
 
 void printinputarea() {
-	mvprintw(22, 41, ">");
+	mvprintw( 22, 41, ">" );
 	
-	mvtermtype(22, 42, stringatcursor());
+	// Clear line
+	mvtermtype( 22, 41, "              ");
+	mvtermtype( 22, 42, stringatcursor() );
 
 	attron(A_STANDOUT);
 	//TODO: print # after input, looking like a cursor
@@ -427,7 +451,7 @@ void genPasswords() {			// Fill the passwords array with Passwords
 }
 
 int insideWord() { // if inside word, return array start position, else -1
-	int a = yxtoarray(curY, curX);
+	int a = yxtoarray(cur.y, cur.x);
 	
 	int i;
 	for (i = 0; i < NUM_PASSWORDS; i++) { // iterate through all words
@@ -442,7 +466,7 @@ int insideWord() { // if inside word, return array start position, else -1
 void highlight() {
 	attron(A_STANDOUT);
 	
-	int a = yxtoarray(curY, curX);
+	int a = yxtoarray(cur.y, cur.x);
 	
 	if (insideWord() >= 0) {
 		a = insideWord();
@@ -462,35 +486,41 @@ char * stringatcursor() { //TODO: refactor heavily
 	if (insideWord() >= 0) { // Cursor is in word.
 		return passwords[0]; //TODO this will only print the first password
 	} else {	// Cursor is on a single char.
-		char *returner = malloc(sizeof(char) * 15);
-		returner[0] = board[yxtoarray(curY, curX)];
-		int i;
-		for (i=1; i < 14; i++) {
-			returner[i] = ' ';
-		}
-		returner[14] = '\0';
+		char *returner = malloc(sizeof(char) * 2);
+		returner[0] = board[yxtoarray(cur.y, cur.x)];
+		returner[1] = '\0';
 		return returner;
 	}
-	
-	return 0;
 }
 
 void mvtermtype(int y, int x, char *string) { //TODO implement a thread
 	int i;
 	int len = strlen(string);
-	for (i=0; i < len; i++) {
-		mvprintw( y, x++, "%c", string[i]);
-		// usleep(80000); //TODO: bring this back
+	
+	//TODO: Debug - why does strlen return 14?
+	// if (len == 14) {
+	// 	mvprintw(0,0, "FAILURE");
+	// 	getch();
+	// }
+	// mvprintw(0,0, "%i ", len);
+	
+	if (len == 1) {
+		mvprintw( y, x++, "%c", string[0]);
 		refresh();
-	}
+	} else {
+		for (i=0; i < len; i++) {
+			mvprintw( y, x++, "%c", string[i]);
+			refresh();
+			// usleep(8000);
+		}
+	}	
 }
 
 int numberofcorrectchars(const char *checkword) {
-	
 	if (strlen(checkword) != passwordLength) {
 		//TODO: properly free memory and end the program
 		endwin();
-		fprintf(stderr, "ERROR: numberofcorrectchars called on string of length %i when passwords are of length %i.\n", (int)strlen(checkword), passwordLength);
+		fprintf(stderr, "ERROR: numberofcorrectchars called on string of length%i when passwords are of length %i.\n", (int)strlen(checkword), passwordLength);
 		exit(1);
 	}
 	
@@ -507,29 +537,98 @@ int numberofcorrectchars(const char *checkword) {
 }
 
 void accesssystem() { //TODO: unimplemented
-	// clear
+	clear();
 	//Print "WELCOME TO ROBCO INDUSTRIES (TM) TERMLINK"
+	mvprintw( 1, 1, "WELCOME TO ROBCO INDUSTRIES (TM) TERMLINK");
 	
 	//Print "> LOGIN ADMIN"
+	mvprintw( 3, 1, "> LOGIN ADMIN");	
 	
 	// "ENTER PASSWORD NOW"
+	mvprintw( 5, 1, "ENTER PASSWORD NOW");	
 	
-	// "********" (passwordLength)
+	// "> ********" (passwordLength)
+	mvprintw( 7, 1, ">");
+	int i;
+	for (i=0; i < passwordLength; i++) {
+		mvprintw(7, 3+i, "*");
+	}
+
 	
-	//clear();
+	getch();
+	clear();
+
+	mvprintw( 1, 7, "ROBCO INDUSTRIES UNIFIED OPERATING SYSTEM" );
+	mvprintw( 2, 9, "COPYRIGHT 2075-2077 ROBCO INDUSTRIES" );
+	mvprintw( 3, 22, "-Server 6-" );
 	
-	//Centered "ROBCO INDUSTRIES UNIFIED OPERATING SYSTEM"
-	//           "COPYRIGHT 2075-2077 ROBCO INDUSTRIES"
-	//                         "Server 6"
+	// If Lock /////////////////////////////////////////////////////////////////
+	mvprintw( 5, 5, "SoftLock Solutions, Inc" );
+	mvprintw( 6, 1, "\"Your Security is Our Security\"" );
+	mvprintw( 7, 1, ">\\ Welcome, USER" );
+	mvprintw( 8, 1, "_______________________________" );
+	
+	int selection = 0;
+	char *menu[] = {
+		"Disengage Lock                             ",
+		"Exit                                       "
+	};
+	
+	
+	// Menu //
+	while (1) {
+		// Print Menu //
+		int i;
+		for (i=0; i < 2; i++) {
+			if (selection == i) {
+				attron(A_STANDOUT);
+				mvprintw(9+i, 1, "> %s", menu[i]);
+				attroff(A_STANDOUT);
+			} else {
+				mvprintw(9+i, 1, "> %s", menu[i]);				
+			}
+		}
+		mvprintw(22, 1, ">                                  ");
+		
+		int uInput = getch();	// Get user input from keyboard (pause)
+		usleep(10); 			// Reduces cursor jump if arrows are held down
+		
+		switch (uInput) {
+		case '\n' :				//TODO: test Linux
+			mvtermtype(22, 3, menu[selection]);
+			if (getch() == '\n') {
+				exituos();
+			}
+			break;
+		case KEY_UP :
+			selection == 0 ? selection = 1 : selection--;
+			break;
+		case KEY_DOWN :
+			selection == 1 ? selection = 0 : selection++;
+			break;
+		case 'q' : // Quit key
+			exituos();
+		default:
+			break;
+		}
+		
+		
+	}
+	
+	//TODO: print ">" with blinking cursor at bottom
+
+	
 	
 	exituos();
 }
 
 void exituos() {
 	//free all alloc'ed memory
-		// free(hacks);
-		// free(messages);
-		// free(passwords);
+		free(hacks);
+		free(messages);
+		free(passwords);
+		// free(board);
+		// free(registers);
 	
 	endwin(); // End ncurses mode
 	exit(0);  // Exit with success error code
