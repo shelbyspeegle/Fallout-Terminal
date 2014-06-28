@@ -79,6 +79,7 @@ void mvtermtype(int y, int x, char *string);
 int numberofcorrectchars(const char *checkword);
 void accesssystem();
 void exituos();
+void lockterminal();
 
 int main(int argc, char **argv) {
 
@@ -109,10 +110,10 @@ int main(int argc, char **argv) {
 			case 4:
 			// Place the four symbols for tries left
 				attron(A_STANDOUT);
-				mvprintw(4, 22, " "); // 1st
-				mvprintw(4, 24, " "); // 2nd
-				mvprintw(4, 26, " "); // 3rd
-				mvprintw(4, 28, " "); // 4th
+				mvprintw(4, 22, " "); // Print 1st
+				mvprintw(4, 24, " "); // Print 2nd
+				mvprintw(4, 26, " "); // Print 3rd
+				mvprintw(4, 28, " "); // Print 4th
 				attroff(A_STANDOUT);
 				break;
 			case 3:
@@ -136,10 +137,7 @@ int main(int argc, char **argv) {
 				mvprintw(4, 24, " "); // Erase the 2nd symbol
 				break;
 			default: // Game over
-				erase();
-				mvprintw(1,1, "LOCKED OUT, PLEASE CONTACT AN ADMINISTRATOR.");
-				getch();
-				exituos();
+				lockterminal();
 		}
 
 		mvprintw(4, 1, "%i ATTEMPT(S) LEFT : ", trysLeft);
@@ -150,8 +148,7 @@ int main(int argc, char **argv) {
 		refresh();
 		
 		if (loggedin) {
-			//TODO: blink cursor 4 times
-			getch(); //TODO: remove this when accesssystem works
+			//TODO: blink cursor 3 times
 			accesssystem();
 		}
 
@@ -194,7 +191,6 @@ int main(int argc, char **argv) {
 			}
 			break;
 		case 'a' :
-			getch();
 			accesssystem();
 			break;
 		case 'q' : // Quit key
@@ -327,6 +323,10 @@ boolean tryPassword() {
 	// 	pushmessage(hackContents);
 	// 	pushmessage("Dud removed.");
 	// 	prints 2 lines
+	//	or
+	//	pushmessage(hackContents);
+	//  pushmessage("Allowance");
+	//	pushmessage("replenished.");
 	// 	}
 	// If trash
 	// 	TODO: what does trash do?
@@ -617,8 +617,6 @@ void accesssystem() { //TODO: unimplemented
 	
 	//TODO: print ">" with blinking cursor at bottom
 
-	
-	
 	exituos();
 }
 
@@ -632,4 +630,22 @@ void exituos() {
 	
 	endwin(); // End ncurses mode
 	exit(0);  // Exit with success error code
+}
+
+void lockterminal() {
+	//TODO: Find a way to move the entire screen up, line by line until no
+	//      lines are visible.
+	
+	erase();
+	
+	int len = strlen("TERMINAL LOCKED");
+	int centerX = cols/2;
+	int centerY = rows/2;
+	
+	mvprintw(centerY-5, centerX-(len/2), "TERMINAL LOCKED");
+	len = strlen("PLEASE CONTACT AN ADMINISTRATOR");
+	mvprintw(centerY-3, centerX-(len/2), "PLEASE CONTACT AN ADMINISTRATOR");
+	
+	getch();
+	exituos();
 }
