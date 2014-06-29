@@ -5,18 +5,18 @@
  *      Author: shelbyspeegle
  */
 
-#include <ncurses.h>			/* ncurses.h includes stdio.h */
+#include <ncurses.h>						/* ncurses.h includes stdio.h */
 #include <string.h>
 #include <unistd.h>
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
-#include <time.h> // for srand(time(NULL))
+#include <time.h> 							/* for srand(time(NULL)) */
 
 #define MAX_MESSAGES 15
 #define MAX_MESSAGE_LENGTH 13
-#define NUM_PASSWORDS 10 // i think it is 17
-#define NUM_HACKS 5 //TODO: find the real number
+#define NUM_PASSWORDS 10 					/* i think it is 17 */
+#define NUM_HACKS 5 						/* TODO: find the real number */
 #define START_Y 6
 #define START_X 8
 #define TYPE_SPEED 24000
@@ -32,46 +32,47 @@ struct point {
 };
 typedef struct point Point;
 
-// Difficulty	Length
-// Very Easy	4-5
-// Easy			6-8
-// Average		9-10
-// Hard			11-12
-// Very Hard	13-15
+/*
+ Difficulty	Length
+ Very Easy	4-5
+ Easy			6-8
+ Average		9-10
+ Hard			11-12
+ Very Hard	13-15
+*/
 
 char *registers[] = {
 	"0xF964", "0xF970", "0xF97C", "0xF988", "0xF994", "0xF9A0", "0xF9AC",
 	"0xF9B8", "0xF9C4", "0xF9D0", "0xF9DC", "0xF9E8", "0xF9F4", "0xFA00",
 	"0xFA0C", "0xFA18", "0xFA24",
 
-	// Repeat of the first 17 //TODO: replace with real registers
+	/* Repeat of the first 17 TODO: replace with real registers */
 	"0xF964", "0xF970", "0xF97C", "0xF988", "0xF994", "0xF9A0", "0xF9AC", 
 	"0xF9B8", "0xF9C4", "0xF9D0", "0xF9DC", "0xF9E8", "0xF9F4", "0xFA00", 
 	"0xFA0C", "0xFA18", "0xFA24"
 };
 
-char **messages; // Array of message strings.
-char board[408]; // Board of 408 chars.
-int hackLocations[NUM_HACKS]; // Series of array positions where hacks are
-int passLocations[] = {0,21,55,79,111,175,220,270,300,390}; //TODO: make dynamic
-int passwordLength = 8; //TODO: make dynamic
+char **messages; 				/* Array of message strings. */
+char board[408]; 				/* Board of 408 chars. */
+int hackLocations[NUM_HACKS]; 	/* Series of array positions where hacks are */
+int passLocations[] = {0,21,55,79,111,175,220,270,300,390}; /*TODO: make dynamic */
+int passwordLength = 8; 		/* TODO: make dynamic */
 char **hacks;
 char **passwords;
 int rows, cols;
 int trysLeft = 4;
-int correct; // The index position of the right password in passLocations[]
+int correct;	/* The index position of the right password in passLocations[] */
 Point cur;
 
 void setup();
 void printinputarea();
-void printboard();
+void refreshboard();
 void pushmessage(const char *newMessage);
 boolean tryPassword();
 void removeDud(int a);
 void addPasswordsToBoard();
 int yxtoarray(int y, int x);
-int arraytoy(int a);
-int arraytox(int a);
+Point arraytopoint(int a);
 char genTrash();
 void genPasswords();
 int insideWord();
@@ -85,175 +86,106 @@ void lockterminal();
 
 int main(int argc, char **argv) {
 	
-	boolean debug = FALSE;
+	/* boolean debug = FALSE; */
 	
-	srand(time(0)); // Seed rand with this so it is more random
+	srand(time(0)); /* Seed rand with this so it is more random */
 	
-	initscr();						// start the curses mode
-	getmaxyx(stdscr,rows,cols);		// get the number of rows and columns
-	keypad(stdscr, TRUE);			// converts arrow key input to usable chars
+	initscr();						/* Start ncurses mode */
+	getmaxyx(stdscr,rows,cols);		/* Get the number of rows and columns */
+	keypad(stdscr, TRUE);			/* Converts arrow key input to usable chars */
 
-	if (rows < 24 || cols < 55) {	// Check to see if window is big enough
-		//TODO: Make terminal centered 
+	if (rows < 24 || cols < 55) {	/* Check to see if window is big enough */
+		
+		/*TODO: Make terminal centered */
+		
 		endwin();
 		printf("ERROR: Terminal window is too small,\n");
 		printf("       minimum size of 24x55 to run.\n");
 		return 0;
 		
-		//53 for play area, +1 on each side for padding
+		/* 53 for play area, +1 on each side for padding */
 	}
 	
-	// Start of display //
+	/* Start of display */
 	mvtermprint( 1, 1, "SECURITY RESET...", PRINT_SPEED);
 	clear();
 	mvtermprint( 3, 1, "WELCOME TO ROBCO INDUSTRIES (TM) TERMLINK", PRINT_SPEED);
 	
-	if ( debug ) { // Manually type in commands
-		
-		int curLine = 5;
-		
-		mvprintw(curLine, 1, ">");
-		
-		char str[80]; //TODO: Find number + enforce
-		
-		while ( TRUE ) {
-			
-			getstr(str);
-			
-			if ( strcmp(str, "SET TERMINAL/INQUIRE") == 0 ) {
-				curLine += 2;
-				mvprintw( curLine, 1, "RIT-V300" );
-				curLine += 2;
-			} else {
-				curLine += 2;
-				
-				char builder[80];
-				builder[0] = 'U';
-				builder[1] = 'O';
-				builder[2] = 'S';
-				builder[3] = ':';
-				builder[4] = ' ';
-				
-				int count = 5;
-				
-				while ( (builder[count] = str[count-5]) ) {
-					count++;
-				}
-				builder[count++] = ':';
-				builder[count++] = ' ';
-				builder[count++] = 'c';
-				builder[count++] = 'o';
-				builder[count++] = 'm';
-				builder[count++] = 'm';
-				builder[count++] = 'a';
-				builder[count++] = 'n';
-				builder[count++] = 'd';
-				builder[count++] = ' ';
-				builder[count++] = 'n';
-				builder[count++] = 'o';
-				builder[count++] = 't';
-				builder[count++] = ' ';
-				builder[count++] = 'f';
-				builder[count++] = 'o';
-				builder[count++] = 'u';
-				builder[count++] = 'n';
-				builder[count++] = 'd';
-				
-				mvprintw( curLine, 1, "%s", builder );
-				curLine += 2;
-			}
-			
-			mvprintw(curLine, 1, ">");
-		}
-	}
-	// else {
-// 		mvtermprint( 5, 1, "SET TERMINAL/INQUIRE", TYPE_SPEED);
-//
-// 		mvtermprint( 7, 1, "RIT-V300", PRINT_SPEED); // PRINT
-//
-// 		mvtermprint( 9, 1, "SET FILE/PROTECTION=OWNER:RWED ACCOUNTS.F", TYPE_SPEED); // TYPE
-//
-// 		mvtermprint( 10, 1, "SET HALT RESTART/MAINT", TYPE_SPEED);
-//
-// 		mvtermprint( 12, 1, "Initializing Robco Industries(TM) MF Boot Agent v2.3.0", PRINT_SPEED); // PRINT
-// 		mvtermprint( 13, 1, "RETROS BIOS", PRINT_SPEED); // PRINT
-// 		mvtermprint( 14, 1, "RBIOS-4.02.08.00 52EE5.E7.E8", PRINT_SPEED); // PRINT
-// 		mvtermprint( 15, 1, "Copyright 2201-2203 Robco Ind.", PRINT_SPEED); // PRINT
-// 		mvtermprint( 16, 1, "Uppermem: 64 KB", PRINT_SPEED); // PRINT
-// 		mvtermprint( 17, 1, "Root (5A8)", PRINT_SPEED); // PRINT
-// 		mvtermprint( 18, 1, "Maintenance Mode", PRINT_SPEED); // PRINT
-//
-// 		mvtermprint( 20, 1, "RUN DEBUG/ACCOUNTS.F", TYPE_SPEED);
-		clear();
-// 	}
+	mvtermprint( 5, 1, "SET TERMINAL/INQUIRE", TYPE_SPEED);
+
+	mvtermprint( 7, 1, "RIT-V300", PRINT_SPEED); // PRINT
+
+	mvtermprint( 9, 1, "SET FILE/PROTECTION=OWNER:RWED ACCOUNTS.F", TYPE_SPEED); // TYPE
+
+	mvtermprint( 10, 1, "SET HALT RESTART/MAINT", TYPE_SPEED);
+
+	mvtermprint( 12, 1, "Initializing Robco Industries(TM) MF Boot Agent v2.3.0", PRINT_SPEED); // PRINT
+	mvtermprint( 13, 1, "RETROS BIOS", PRINT_SPEED); // PRINT
+	mvtermprint( 14, 1, "RBIOS-4.02.08.00 52EE5.E7.E8", PRINT_SPEED); // PRINT
+	mvtermprint( 15, 1, "Copyright 2201-2203 Robco Ind.", PRINT_SPEED); // PRINT
+	mvtermprint( 16, 1, "Uppermem: 64 KB", PRINT_SPEED); // PRINT
+	mvtermprint( 17, 1, "Root (5A8)", PRINT_SPEED); // PRINT
+	mvtermprint( 18, 1, "Maintenance Mode", PRINT_SPEED); // PRINT
+
+	mvtermprint( 20, 1, "RUN DEBUG/ACCOUNTS.F", TYPE_SPEED);
+	clear();
 	
+	noecho();						/* Silence user input */
 	
-	
-	curs_set(0);					// This hides the ncurses cursor
-	noecho();						// silence user input
-		
 	setup();
 	
 	boolean loggedin = FALSE;
 	
 	while (1) {
+		/* Update the attempts left section //////////////////////////////////*/
+		mvprintw( 4, 21, "        "); 					/* Clear the tries */
 		
+		if (trysLeft == 1) {
+			attron(A_BLINK); /* eh blinkin'! */
+			mvprintw(2, 1, "!!! WARNING: LOCKOUT IMMINENT !!!");
+			attroff(A_BLINK);
+		} else {
+			mvprintw(2, 1, "ENTER PASSWORD NOW               ");
+		}
+		
+		/* Place the four symbols for tries left */
+		attron(A_STANDOUT);
 		switch (trysLeft) {
 			case 4:
-			// Place the four symbols for tries left
-				mvprintw( 4, 21, "        ");
-				attron(A_STANDOUT);
-				mvprintw( 4, 21, " "); // 1st
-				mvprintw( 4, 23, " "); // 2nd
-				mvprintw( 4, 25, " "); // 3rd
-				mvprintw( 4, 27, " "); // 4th
-				attroff(A_STANDOUT);
-				break;
+				mvprintw( 4, 27, " "); /* 4th */
 			case 3:
-				mvprintw( 4, 21, "        ");
-				attron(A_STANDOUT);
-				mvprintw( 4, 21, " "); // 1st
-				mvprintw( 4, 23, " "); // 2nd
-				mvprintw( 4, 25, " "); // 3rd
-				attroff(A_STANDOUT);
-				break;
+				mvprintw( 4, 25, " "); /* 3rd */
 			case 2:
-				mvprintw( 4, 21, "        ");
-				attron(A_STANDOUT);
-				mvprintw( 4, 21, " "); // 1st
-				mvprintw( 4, 23, " "); // 2nd
+				mvprintw( 4, 23, " "); /* 2nd */
+			case 1: /* Lockout imminent */
+				mvprintw( 4, 21, " "); /* 1st */
 				attroff(A_STANDOUT);
 				break;
-			case 1: // Lockout imminent
-				mvprintw( 4, 21, "        ");
-				attron(A_STANDOUT);
-				mvprintw( 4, 21, " "); // 1st
-				attroff(A_STANDOUT);
-				attron(A_BLINK); // eh blinkin'!
-				mvprintw(2, 1, "!!! WARNING: LOCKOUT IMMINENT !!!");
-				attroff(A_BLINK);
-				break;
-			default: // Game over
+			default: /* Game over */
 				lockterminal();
 		}
-
+		
 		mvprintw(4, 1, "%i", trysLeft);
-		printinputarea();
-		printboard();
+		
+		refreshboard();
+		
 		move(cur.y, cur.x);
+		
 		highlight();
 		refresh();
 		
+		printinputarea();
+
 		if (loggedin) {
-			//TODO: blink cursor 3 times
+			usleep(1000000*3);
 			accesssystem();
 		}
 
-		int uInput = getch();	// Get user input from keyboard (pause)
-		usleep(10); 			// Reduces cursor jump if arrows are held down
+		int uInput = getch();	/* Get user input from keyboard (pause) */
+		usleep(10); 			/* Reduces cursor jump if arrows are held down */
 		
 		switch (uInput) {
-		case '\n' :				//TODO: test Linux
+		case '\n' :				/* TODO: test Linux */
 			loggedin = tryPassword();
 			break;
 		case KEY_UP :
@@ -290,29 +222,31 @@ int main(int argc, char **argv) {
 			}
 			break;
 		case 'a' :
-			accesssystem();
+			loggedin = TRUE;
 			break;
-		case 'q' : // Quit key
+		case 'q' : /* Quit key */
 			exituos();
 		default:
 			break;
 		}
 		
-		// if inside a word
-			// if key right
-				// if not at MAX, go to arraystartposition + WORDLENGTH + 1
-			// if key left
-				// if not at 0, go to arraystartposition of word - 1
+		/* 
+		if inside a word
+			if key right
+				if not at MAX, go to arraystartposition + WORDLENGTH + 1
+			if key left
+				if not at 0, go to arraystartposition of word - 1
+		*/
 	}
 	exituos();
 }
 
 void setup() {
-	// Board Set-up ////////////////////////////////////////////////////////////
+	/* Board Set-up //////////////////////////////////////////////////////////*/
 	mvprintw( 22, 41, ">" );
 	refresh();
 	
-	// Place cursor at starting position (board[0])
+	/* Place cursor at starting position (board[0]) */
 	cur.y = START_Y;
 	cur.x = START_X;
 	
@@ -324,40 +258,38 @@ void setup() {
 	mvtermprint( 4, 1, "4 ATTEMPT(S) LEFT : ", PRINT_SPEED );
 	
 	attron(A_STANDOUT);
-	mvprintw(4, 21, " "); // Print 1st
+	mvprintw(4, 21, " "); /* Print 1st */
 	usleep(PRINT_SPEED*2);
-	mvprintw(4, 23, " "); // Print 2nd
+	mvprintw(4, 23, " "); /* Print 2nd */
 	usleep(PRINT_SPEED*2);
-	mvprintw(4, 25, " "); // Print 3rd
+	mvprintw(4, 25, " "); /* Print 3rd */
 	usleep(PRINT_SPEED*2);
-	mvprintw(4, 27, " "); // Print 4th
-	usleep(PRINT_SPEED*2);
+	mvprintw(4, 27, " "); /* Print 4th */
+	usleep(PRINT_SPEED);
 	attroff(A_STANDOUT);
-	
-	//TODO: print attempts left here along with the rest of the setup
 
-	// Populate Entire Board with Trash ////////////////////////////////////////
+	/* Populate Board Array with Trash ///////////////////////////////////////*/
 	int i;
 	for (i = 0; i < 408; i++) {
 		board[i] = genTrash();
 	}
 	
 	genPasswords();
-	
 
-	// Print Registers /////////////////////////////////////////////////////////
+	/* TODO: clean up the code below, it is pretty messy */
+	/* Print Registers ///////////////////////////////////////////////////////*/
 	
 	int printX = 1;
 	int printY = 6;
 	
-	// Print left half of game // 
+	/* Print left half of game */
 	for (i = 0; i < 17; i++) {
 		mvtermprint(printY, printX, registers[i], PRINT_SPEED/6 );
 		printX+=7;
 		refresh();
 		
 		int j;
-		for (j = 0; j < 12; j++) { // iterate through each char in array
+		for (j = 0; j < 12; j++) { /* iterate through each char in array */
 			mvprintw(printY, printX++, "%c", board[ j + (12 * i) ]);
 			usleep(PRINT_SPEED/6);
 			refresh();
@@ -370,14 +302,14 @@ void setup() {
 	printY = 6;
 	printX = 21;
 
-	// Print right half of game //
+	/* Print right half of game */
 	for (i = 0; i < 17; i++) {
 		mvtermprint(printY, printX, registers[i+17], PRINT_SPEED/6 );
 		printX+=7;
 		refresh();
 		
 		int j;
-		for (j = 0; j < 12; j++) { // iterate through each char in array
+		for (j = 0; j < 12; j++) { /* iterate through each char in array */
 			mvprintw(printY, printX++, "%c", board[204 + j + (12 * i) ]);
 			usleep(PRINT_SPEED/6);
 			refresh();
@@ -390,43 +322,37 @@ void setup() {
 }
 
 void printinputarea() {
+	mvprintw( 22, 42, "              ");				/* Clear input line */
 	
-	// Clear line
-	mvprintw( 22, 42, "              ");
 	mvtermprint( 22, 42, stringatcursor(), PRINT_SPEED );
-
-	attron(A_STANDOUT);
-	//TODO: print # after input, looking like a cursor
-	attroff(A_STANDOUT);
-	
 
 	int i;
 	for (i=0; i < MAX_MESSAGES; i++) {
 		if (messages[i])
-			mvprintw(20-i, 41, "%s", messages[i]); // Print messages that exist
+			mvprintw(20-i, 41, "%s", messages[i]); /* Print messages that exist */
 	}
 }
 
-void printboard() {
+void refreshboard() {
 	int i;
-	for (i = 0; i < 408; i++) { // iterate through each char in array
-		mvprintw(arraytoy(i), arraytox(i), "%c", board[i]);
+	for (i = 0; i < 408; i++) { /* iterate through each char in array */
+		mvprintw(arraytopoint(i).y, arraytopoint(i).x, "%c", board[i]);
 	}
 }
 
 void pushmessage(const char *newMessage) {
 	char *fullMsg = malloc(sizeof(char) * MAX_MESSAGE_LENGTH + 1);
 	
-	// Start the message off with a '>'
+	/* Start the message off with a '>' */
 	fullMsg[0] = '>';
 	
-	// Copy all of the contents of the passed in string
+	/* Copy all of the contents of the passed in string */
 	int k;
 	for (k=1; k<strlen(newMessage)+1; k++) {
 		fullMsg[k] = newMessage[k-1];
 	}
 	
-	// Fill the rest of the string with spaces
+	/* Fill the rest of the string with spaces */
 	while (k < MAX_MESSAGE_LENGTH) {
 		fullMsg[k++] = ' ';
 	}
@@ -440,7 +366,7 @@ void pushmessage(const char *newMessage) {
 
 boolean tryPassword() {
 	if (insideWord() >= 0) {
-		int k = insideWord(); // start of the word
+		int k = insideWord(); /* start of the word */
 		char *check = malloc(sizeof(char) * passwordLength);
 		int j;
 		for (j=0; j<passwordLength; j++) {
@@ -456,9 +382,9 @@ boolean tryPassword() {
 			pushmessage( "while system" );
 			pushmessage( "is accessed." );
 			
-			//free(check)
+			/*free(check) */
 
-			return TRUE; //TRUE
+			return TRUE;
 		} else {
 			pushmessage( "Entry denied" );
 			char *stringbuild = malloc(sizeof(char) * MAX_MESSAGE_LENGTH);
@@ -467,96 +393,98 @@ boolean tryPassword() {
 			trysLeft--;
 		}
 	}
-	//TODO: test for hacks and trash
+	/* TODO: test for hacks and trash */
 	
-	// else if (insideHack() >= 0) {
-	// 	pushmessage(hackContents);
-	// 	pushmessage("Dud removed.");
-	// 	prints 2 lines
-	//	or
-	//	pushmessage(hackContents);
-	//  pushmessage("Allowance");
-	//	pushmessage("replenished.");
-	// 	}
-	// If trash
-	// 	TODO: what does trash do?
-
-	return 0;
+	/*
+	else if (insideHack() >= 0) {
+		pushmessage(hackContents);
+		pushmessage("Dud removed.");
+		prints 2 lines
+		or
+		pushmessage(hackContents);
+	 pushmessage("Allowance");
+		pushmessage("replenished.");
+		}
+	If trash
+		TODO: what does trash do?
+	*/
+	
+	return FALSE;
 }
 
-void removeDud(int a) { //TODO: unimplemented.
+void removeDud(int a) { /* TODO: unimplemented. */
 	pushmessage(">Dud removed.");
 	pushmessage(">[*(>]");
 }
 
 int yxtoarray(int y, int x) {
-	//TODO: think about coordinate conversions earlier on in the program
+	/* TODO: think about coordinate conversions earlier on in the program */
 	if ( y >= 6 && y <= 22 ) {
-		y-=6; // convert y so y origin is 6
+		y-=6; /* convert y so y origin is 6 */
 		
 		int temp = y*12;
 		
 		if ( x >= 8 && x <= 19 ) {
-			// left half of board
-			x -= 8; // convert x so x origin is 8
+			/* left half of board */
+			x -= 8; /* convert x so x origin is 8 */
 			
 			return temp + (x % 12);
 			
 		} else if (x >= 28 && x <= 39) {
-			x -= 27; // convert x so x origin is 8 //TODO: fix this comment
+			x -= 27; /* convert x so x origin is 8 TODO: fix this comment */
 			
-			// right half of board
+			/* right half of board */
 			temp+=203;
 			
-			return temp + (x % 13); // TODO: why 13?
+			return temp + (x % 13); /* TODO: why 13? */
 		} else {
-			return -1; // x is invalid
+			return -1; /* x is invalid */
 		}
 	} else {
-		return -1; // y is invalid
+		return -1; /* y is invalid */
 	}
 }
 
-int arraytoy(int a) { //TODO: combine these two functions using a "Point"
-	int startY = 6;
+Point arraytopoint(int a) {
+	
+	Point result;
+	
+	if ( a <= 203 ) 						/* left half */
+		result.x = ( a % 12 ) + START_X;
+	else									/* right half */
+		result.x = ( a % 12 ) + START_X + 20;
+	
 	int reducer = 0;
 	if (a > 203)
-		reducer = 17; //TODO: revisit this name for clarity
-	return startY + ( ( a/12 ) ) - reducer;
-}
-
-int arraytox(int a) {
-	int startX = 8;
+		reducer = 17; /* TODO: revisit this name for clarity */
+	result.y = START_Y + ( ( a/12 ) ) - reducer;
 	
-	if ( a <= 203 ) 						// left half
-		return ( a % 12 ) + startX;
-	else									// right half
-		return ( a % 12 ) + startX + 20;
+	return result;
 }
 
 char genTrash() {
-	int min = 1;	// 31 possible chars i want to pick from randomly for trash.
+	int min = 1;	/* 31 possible chars i want to pick from randomly for trash. */
 	int max = 31;
 	
 	char c;
-	int i = ( rand() % (max+1-min) ) + min; // 1-31
+	int i = ( rand() % (max+1-min) ) + min; /* 1-31 */
 	
-	if (i <= 15) { 				// number is between 1, 15
-		c = i + 32;					// ascii values between 33, 47
-	} else if (i <= 22 ) {		// number is between 16, 22
-		c = i + 42;					// ascii values between 58, 64
-	} else if ( i <= 28 ) {		// number is between 23, 28
-		c = i + 68;					// ascii values between 91, 96
-	} else {					// number is between 29, 31
-		c = i + 94;					// ascii values between 123, 125
+	if (i <= 15) { 				/* number is between 1, 15 */
+		c = i + 32;					/* ascii values between 33, 47 */
+	} else if (i <= 22 ) {		/* number is between 16, 22 */
+		c = i + 42;					/* ascii values between 58, 64 */
+	} else if ( i <= 28 ) {		/* number is between 23, 28 */
+		c = i + 68;					/* ascii values between 91, 96 */
+	} else {					/* number is between 29, 31 */
+		c = i + 94;					/* ascii values between 123, 125 */
 	}
 	
 	return c;
 }
 
-void genPasswords() {			// Fill the passwords array with Passwords
-	//TODO: use passwordLength
-	//TODO: randomly pick words from list
+void genPasswords() {			/* Fill the passwords array with Passwords */
+	/* TODO: use passwordLength */
+	/* TODO: randomly pick words from list */
 	
 	passwords[0] = "ABCDEFGH";
 	passwords[1] = "BBCDEFGH";
@@ -572,15 +500,17 @@ void genPasswords() {			// Fill the passwords array with Passwords
 	
 	int max = NUM_PASSWORDS-1;
 	int min = 0;
-	correct = ( rand() % (max+1-min) ) + min; // 0, NUM_PASSWORDS-1
+	correct = ( rand() % (max+1-min) ) + min; /* 0, NUM_PASSWORDS-1 */
 	
-	//TODO: implement this
-	// Get total number of spaces in board
-	//  subtract WORD_LENGTH * NUM_PASSWORDS
-	// Divide by NUM_PASSWORDS = var
-	// Randomly place word between i * (from 0 to var-1-WORD_LENGTH)
+	/*
+		TODO: implement this
+		Get total number of spaces in board
+		 subtract WORD_LENGTH * NUM_PASSWORDS
+		Divide by NUM_PASSWORDS = var
+		Randomly place word between i * (from 0 to var-1-WORD_LENGTH)
+	*/
 	
-	// At each passLocation copy a password
+	/* At each passLocation copy a password */
 	int currLocation = 0;
 	int i;
 	for ( i = 0; i < NUM_PASSWORDS; i++ ) {
@@ -597,14 +527,14 @@ void genPasswords() {			// Fill the passwords array with Passwords
 		}
 	}
 	
-	//TODO: Randomly place hacks here and there
+	/* TODO: Randomly place hacks here and there */
 }
 
-int insideWord() { // if inside word, return array start position, else -1
+int insideWord() { /* if inside word, return array start position, else -1 */
 	int a = yxtoarray(cur.y, cur.x);
 	
 	int i;
-	for (i = 0; i < NUM_PASSWORDS; i++) { // iterate through all words
+	for (i = 0; i < NUM_PASSWORDS; i++) { /* iterate through all words */
 		if (a >= passLocations[i] && a < (passLocations[i] + passwordLength )) {
 			return passLocations[i];
 		}
@@ -621,7 +551,7 @@ void highlight() {
 	if (insideWord() >= 0) {
 		a = insideWord();
 		while ( isalpha(board[a])  ) {
-			mvprintw( arraytoy(a), arraytox(a), "%c", board[a]);
+			mvprintw( arraytopoint(a).y, arraytopoint(a).x, "%c", board[a]);
 			a++;
 		}
 		attroff(A_STANDOUT);
@@ -632,10 +562,10 @@ void highlight() {
 	attroff(A_STANDOUT);
 }
 
-char * stringatcursor() { //TODO: refactor heavily
-	if (insideWord() >= 0) { // Cursor is in word.
-		return passwords[0]; //TODO this will only print the first password
-	} else {	// Cursor is on a single char.
+char * stringatcursor() { 		/* TODO: refactor heavily */
+	if (insideWord() >= 0) { 	/* Cursor is in word. */
+		return passwords[0];	/* TODO this will only print the first password */
+	} else {					/* Cursor is on a single char. */
 		char *returner = malloc(sizeof(char) * 2);
 		returner[0] = board[yxtoarray(cur.y, cur.x)];
 		returner[1] = '\0';
@@ -644,15 +574,15 @@ char * stringatcursor() { //TODO: refactor heavily
 }
 
 void mvtermprint(int y, int x, char *string, int speed) {
-	
-	//TODO implement a thread
 		
-	//TODO: Debug - why does strlen return 14?
-	// if (len == 14) {
-	// 	mvprintw(0,0, "FAILURE");
-	// 	getch();
-	// }
-	// mvprintw(0,0, "%i ", len);
+	/*	
+		TODO: Debug - why does strlen return 14?
+		if (len == 14) {
+			mvprintw(0,0, "FAILURE");
+			getch();
+		}
+		mvprintw(0,0, "%i ", len);
+	*/
 	
 	int i;
 	int len = strlen(string);
@@ -661,7 +591,7 @@ void mvtermprint(int y, int x, char *string, int speed) {
 		mvprintw( y, x++, ">" );
 		refresh();
 	
-		usleep(1000000); //TODO: get exact time
+		usleep(1000000); /* TODO: get exact time */
 	}
 	
 	if (len == 1) {
@@ -682,7 +612,7 @@ void mvtermprint(int y, int x, char *string, int speed) {
 
 int numberofcorrectchars(const char *checkword) {
 	if (strlen(checkword) != passwordLength) {
-		//TODO: properly free memory and end the program
+		/* TODO: properly free memory and end the program */
 		endwin();
 		fprintf(stderr, "ERROR: numberofcorrectchars called on string of length%i when passwords are of length %i.\n", (int)strlen(checkword), passwordLength);
 		exit(1);
@@ -704,23 +634,15 @@ void accesssystem() {
 	
 	clear();
 	
-	curs_set(1);					// This unhides the ncurses cursor
-	
-	//Print "WELCOME TO ROBCO INDUSTRIES (TM) TERMLINK"
 	mvtermprint( 1, 1, "WELCOME TO ROBCO INDUSTRIES (TM) TERMLINK", PRINT_SPEED );
-	
-	//Print "> LOGIN ADMIN"
 	mvtermprint( 3, 1, "LOGIN ADMIN", TYPE_SPEED );	
-	
-	// "ENTER PASSWORD NOW"
 	mvtermprint( 5, 1, "ENTER PASSWORD NOW", PRINT_SPEED );	
 	
-	// "> ********" (passwordLength)
 	mvprintw( 7, 1, ">");
 	int i;
 	for (i=0; i < passwordLength; i++) {
 		mvprintw(7, 3+i, "*");
-		//TODO: Make this use mvtermprint
+		/* TODO: Make this use mvtermprint OR implement usleep()*/
 	}
 	
 	clear();
@@ -729,7 +651,7 @@ void accesssystem() {
 	mvtermprint( 2, 9, "COPYRIGHT 2075-2077 ROBCO INDUSTRIES", PRINT_SPEED );
 	mvtermprint( 3, 22, "-Server 1-", PRINT_SPEED );
 	
-	// If Lock /////////////////////////////////////////////////////////////////
+	/* If Lock ///////////////////////////////////////////////////////////////*/
 	mvtermprint( 5, 5, "SoftLock Solutions, Inc", PRINT_SPEED );
 	mvtermprint( 6, 1, "\"Your Security is Our Security\"", PRINT_SPEED );
 	mvtermprint( 7, 1, ">\\ Welcome, USER", PRINT_SPEED );
@@ -739,35 +661,40 @@ void accesssystem() {
 	
 	int num_options = 2;
 	char *menu[] = {
-		"Disengage Lock                             ",
-		"Exit                                       "
+		"Disengage Lock",
+		"Exit"
 	};
 	
-	
-	// Menu //
+	/* Menu */
 	while (1) {
-		// Print Menu //
+		/* Print Menu */
 		int i;
 		for (i=0; i < num_options; i++) {
-			if (selection == i) {
+			if (selection == i) {		
 				attron(A_STANDOUT);
-				mvprintw(9+i, 1, "> %s", menu[i]);
+				mvprintw( 9+i, 1, "                               "); /* TODO: too long? */
+				mvprintw( 9+i, 1, "> %s", menu[i]);
 				attroff(A_STANDOUT);
 			} else {
+				mvprintw( 9+i, 1, "                               "); /* TODO: too long? */
 				mvprintw(9+i, 1, "> %s", menu[i]);
 			}
 		}
 		
-		//TODO: this is too long
-		mvprintw(22, 1, ">                                  ");
+		mvprintw( 22, 1, "                           "); /* TODO: too long? */
+		mvprintw( 22, 1, "> ");
 		
-		int uInput = getch();	// Get user input from keyboard (pause)
-		usleep(10); 			// Reduces cursor jump if arrows are held down
+		int uInput = getch();	/* Get user input from keyboard (pause) */
+		usleep(10); 			/* Reduces cursor jump if arrows are held down */ 
 		
 		switch (uInput) {
-		case '\n' :				//TODO: test Linux
+		case '\n' :				/* TODO: test Linux */
 			mvtermprint(22, 3, menu[selection], PRINT_SPEED );
 			if (getch() == '\n') {
+				mvprintw( 22, 1, "                           "); /* TODO: too long? */
+				mvprintw( 22, 1, "> ");
+				mvtermprint( 22, 3, "Exiting...", PRINT_SPEED);
+				usleep(1000000*3);
 				exituos();
 			}
 			break;
@@ -777,35 +704,33 @@ void accesssystem() {
 		case KEY_DOWN :
 			selection == 1 ? selection = 0 : selection++;
 			break;
-		case 'q' : // Quit key
+		case 'q' : /* Quit key */
 			exituos();
 		default:
 			break;
 		}
-		
-		
 	}
 	
-	//TODO: print ">" with blinking cursor at bottom
+	/* TODO: print ">" with blinking cursor at bottom */
 
 	exituos();
 }
 
 void exituos() {
-	//free all alloc'ed memory
-		free(hacks);
-		free(messages);
-		free(passwords);
-		// free(board);
-		// free(registers);
+	/* free all alloc'ed memory */
+	free(hacks);
+	free(messages);
+	free(passwords);
+	/* free(board); */
+	/* free(registers); */
 	
-	endwin(); // End ncurses mode
-	exit(0);  // Exit with success error code
+	endwin(); /* End ncurses mode */
+	exit(0);  /* Exit with success error code */
 }
 
 void lockterminal() {
-	//TODO: Find a way to move the entire screen up, line by line until no
-	//      lines are visible.
+	/* TODO: Find a way to move the entire screen up, line by line until no
+	         lines are visible. */
 	
 	erase();
 	
