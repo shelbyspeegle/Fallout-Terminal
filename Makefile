@@ -1,6 +1,6 @@
 
 CC=gcc
-CFLAGS=-Wall -g -O
+CFLAGS=-Wall -g -O -std=c89
 LFLAGS=-lncurses
 PROGS=hackterm
 
