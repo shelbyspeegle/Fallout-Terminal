@@ -29,30 +29,43 @@ $ ./hackterm
 
 Program will stay running until attempts are gone, or quit key is pressed (see secret codes section below for all special keys). ^Z or ^C also work just as well!
 
+##Requirements:
+- OS: Mac OSX or GNU/Linux
+- Terminal: minimum 80 x 24 with ascii characters
+- Ncurses library installed
+  * Linux: ```sudo apt-get install ncurses```
+
+##Controls:
+Use the arrow keys to navigate the board. Use enter to submit the highlighted word as a password.
+
 ##Secret codes:
 
 For aspects of the game that I have not implemented yet, I have in place keys that the user can press in order to achieve certain effects:
 
 | Key | Effect                                                  |
-| --- | ------------------------------------------------------  |
+| --- | ------------------------------------------------------- |
 | 'q' | Quit application.                                       |
 | 'e' | Prints a dummy "Dud removed." message to messages area. |
 | '-' | Subtracts one attempt.                                  |
+| '+' | Adds one attempt.                                       |
+| 'a' | Grants access.                                          |
 
 #<a name="to-do"></a>To-Do
 - Generate random words of n length.
+- Make highlighted content print properly in the bottom right.
 - Generate and add bracket 'hacks'.
 - Randomly place objects on board.
 - Right arrow from highlighted word should move to next board space on same line.
 - Allow user to control experience from command line args.
-- - Option for user to type in terminal commands by themselves or have it autotype.
-- - Option for difficulty settings.
-- Implement terminal 'printout' effect.
+  * Option for user to type in terminal commands by themselves or have it autotype.
+  * Option for difficulty settings.
+- Implement terminal 'printout' effect (mvtermtype attempted this but usleep causes sluggish experience).
 - Add capability of running a pseudo-terminal once game is complete.
-- - Access some kind of fun files.
+  * Access some kind of fun files.
 - Generate registers dynamically so every game is a little different.
 - Allow user to type in password if desired.
-
+- Add how to install ncurses for requirements mac section.
+- Make RobCo UOS centered at all terminal resolutions.
 
 #<a name="dependencies"></a>Dependencies
 
