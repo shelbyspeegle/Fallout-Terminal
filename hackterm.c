@@ -248,6 +248,7 @@ int main(int argc, char **argv) {
 				attroff(A_STANDOUT);
 				break;
 			default: /* Game over */
+				attroff(A_STANDOUT);
 				lockterminal();
 		}
 		
@@ -408,15 +409,15 @@ void setup() {
 }
 
 void printinputarea() {
-	mvprintw( 22, 42, "              ");				/* Clear input line */
-	
-	mvtermprint( 22, 42, stringatcursor(), PRINT_SPEED );
-
 	int i;
 	for (i=0; i < MAX_MESSAGES; i++) {
 		if (messages[i])
 			mvprintw(20-i, 41, "%s", messages[i]); /* Print messages that exist */
 	}
+	
+	mvprintw( 22, 42, "              ");				/* Clear input line */
+	
+	mvtermprint( 22, 42, stringatcursor(), PRINT_SPEED );
 }
 
 void refreshboard() {
@@ -572,17 +573,17 @@ void genPasswords() {			/* Fill the passwords array with Passwords */
 	/* TODO: use passwordLength */
 	/* TODO: randomly pick words from list */
 	
-	passwords[0] = "ABCDEFGH";
-	passwords[1] = "BBCDEFGH";
-	passwords[2] = "CBCDEFGH";
-	passwords[3] = "DBCDEFGH";
-	passwords[4] = "EBCDEFGH";
-	passwords[5] = "FBCDEFGH";								
-	passwords[6] = "GBCDEFGH";
-	passwords[6] = "HBCDEFGH";
-	passwords[7] = "IBCDEFGH";
-	passwords[8] = "JBCDEFGH";
-	passwords[9] = "KBCDEFGH";
+	passwords[0] = "DELICACY";
+	passwords[1] = "ABANDONS";
+	passwords[2] = "CASHBACK";
+	passwords[3] = "GREENERY";
+	passwords[4] = "TADPOLES";
+	passwords[5] = "KNITPICK";								
+	passwords[6] = "GRUELING";
+	passwords[6] = "ASSESSOR";
+	passwords[7] = "CAUTIONS";
+	passwords[8] = "CANNIBIS";
+	passwords[9] = "ACCEPTED";
 	
 	int max = NUM_PASSWORDS-1;
 	int min = 0;
@@ -817,6 +818,8 @@ void exituos() {
 void lockterminal() {
 	/* TODO: Find a way to move the entire screen up, line by line until no
 	         lines are visible. */
+	
+	curs_set(0); /* Hide the cursor */
 	
 	erase();
 	
