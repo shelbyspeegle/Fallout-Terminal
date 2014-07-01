@@ -27,7 +27,7 @@ Run program hackterm:
 $ ./hackterm
 ```
 
-Program will stay running until attempts are gone, or quit key is pressed (see secret codes section below for all special keys). ^Z or ^C also work just as well!
+Program will stay running until attempts are gone, system is accessed, or quit key is pressed (see secret codes section below for all special keys). ^Z or ^C also work just as well!
 
 ##Requirements:
 - OS: Mac OSX or GNU/Linux
@@ -51,19 +51,24 @@ For aspects of the game that I have not implemented yet, I have in place keys th
 | 'a' | Grants access.                                          |
 
 #<a name="to-do"></a>To-Do
+Basic features: (Functionality that the in-game experience contains)
 - Generate random words of n length.
 - Generate and add bracket 'hacks'.
 - Randomly place objects on board.
 - Right arrow from highlighted word should move to next board space on same line.
 - Allow user to control experience from command line args.
-  * Option for user to type in terminal commands by themselves or have it autotype.
   * Option for difficulty settings.
+- Make RobCo UOS centered at all terminal resolutions.
+- Add how to install ncurses for requirements mac section.
+- Add lock screen transition where all lines on the screen move up and away.
+- Erase word in bottom right when correct password is entered, like in-game.
+
+WishList:
+- Generate registers dynamically so every game is a little different.
 - Add capability of running a pseudo-terminal once game is complete.
   * Access some kind of fun files.
-- Generate registers dynamically so every game is a little different.
 - Allow user to type in password if desired.
-- Add how to install ncurses for requirements mac section.
-- Make RobCo UOS centered at all terminal resolutions.
+- Allow user to skip terminal printing sequences.
 
 #<a name="dependencies"></a>Dependencies
 
