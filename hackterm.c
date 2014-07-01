@@ -30,24 +30,12 @@ struct point {
 };
 typedef struct point Point;
 
-/*
- Difficulty	Length
- Very Easy	4-5
- Easy			6-8
- Average		9-10
- Hard			11-12
- Very Hard	13-15
-*/
-
 char *registers[] = {
 	"0xF964", "0xF970", "0xF97C", "0xF988", "0xF994", "0xF9A0", "0xF9AC",
 	"0xF9B8", "0xF9C4", "0xF9D0", "0xF9DC", "0xF9E8", "0xF9F4", "0xFA00",
-	"0xFA0C", "0xFA18", "0xFA24",
-
-	/* Repeat of the first 17 TODO: replace with real registers */
-	"0xF964", "0xF970", "0xF97C", "0xF988", "0xF994", "0xF9A0", "0xF9AC", 
-	"0xF9B8", "0xF9C4", "0xF9D0", "0xF9DC", "0xF9E8", "0xF9F4", "0xFA00", 
-	"0xFA0C", "0xFA18", "0xFA24"
+	"0xFA0C", "0xFA18", "0xFA24", "0xFA30", "0xFA3C", "0xFA48", "0xFA54", 
+	"0xFA60", "0xFA6C", "0xFA78", "0xFA84", "0xFA90", "0xFA9C", "0xFAA8", 
+	"0xFA84", "0xFAC0", "0xFACC", "0xFAD8", "0xFAE4", "0xFAF0"
 };
 
 char **messages; 				/* Array of message strings. */
@@ -63,6 +51,8 @@ int correct;	/* The index position of the right password in passLocations[] */
 Point cur;
 int TYPE_SPEED = 24000; /* TODO: make these constants when program is finished */
 int PRINT_SPEED = 18000;
+boolean debug = FALSE;
+boolean hardmode = FALSE;
 
 void setup();
 void printinputarea();
@@ -83,11 +73,10 @@ int numberofcorrectchars(const char *checkword);
 void accesssystem();
 void exituos();
 void lockterminal();
+void manualinputmode();
+void autoinputmode();
 
 int main(int argc, char **argv) {
-	
-	boolean debug = FALSE;
-	boolean hardmode = FALSE;
 	
 	srand(time(0)); /* Seed rand with this so it is more random */
 	
@@ -107,7 +96,7 @@ int main(int argc, char **argv) {
 		/* 53 for play area, +1 on each side for padding */
 	}
 	
-	/* Cut to the chase when debugging */
+	/* Cut to the chase if debugging */
 	if ( debug ) TYPE_SPEED = PRINT_SPEED = 0;
 	
 	/* Start of display */
@@ -115,108 +104,10 @@ int main(int argc, char **argv) {
 	clear();
 	mvtermprint( 3, 1, "WELCOME TO ROBCO INDUSTRIES (TM) TERMLINK", PRINT_SPEED);
 
-	if ( hardmode ) { /* Manual input mode */
-
-		int curLine = 5;
-
-		mvprintw( curLine, 1, ">") ;
-
-		char str[80]; /* TODO: Find number + enforce */
-
-		boolean instartup = TRUE;
-
-		while ( instartup ) {
-			
-			getstr( str );
-
-			if ( strcmp( str, "SET TERMINAL/INQUIRE" ) == 0 ) {
-				curLine += 2;
-				mvprintw( curLine, 1, "RIT-V300" );
-				curLine += 2;
-			} else if ( strcmp( str, "SET FILE/PROTECTION=OWNER:RWED ACCOUNTS.F" ) == 0) {
-				curLine++;
-			} else if ( strcmp( str, "SET HALT RESTART/MAINT" ) == 0 ) {
-				curLine += 2;
-				mvtermprint( curLine++, 1, "Initializing Robco Industries(TM) MF Boot Agent v2.3.0", PRINT_SPEED);
-				mvtermprint( curLine++, 1, "RETROS BIOS", PRINT_SPEED);
-				mvtermprint( curLine++, 1, "RBIOS-4.02.08.00 52EE5.E7.E8", PRINT_SPEED);
-				mvtermprint( curLine++, 1, "Copyright 2201-2203 Robco Ind.", PRINT_SPEED);
-				mvtermprint( curLine++, 1, "Uppermem: 64 KB", PRINT_SPEED);
-				mvtermprint( curLine++, 1, "Root (5A8)", PRINT_SPEED);
-				mvtermprint( curLine, 1, "Maintenance Mode", PRINT_SPEED);
-				curLine += 2;
-			} else if ( strcmp( str, "RUN DEBUG/ACCOUNTS.F" ) == 0 ) {
-				instartup = FALSE;
-			} else if ( strcmp( str, "EXIT" ) == 0 ) {
-				curLine += 2;
-				mvtermprint( curLine, 1, "EXITING...", PRINT_SPEED );
-				refresh();
-				usleep(1000000);
-				exituos();
-			} else {
-				curLine += 2;
-
-				char builder[80];
-				builder[0] = 'U';
-				builder[1] = 'O';
-				builder[2] = 'S';
-				builder[3] = ':';
-				builder[4] = ' ';
-
-				int count = 5;
-
-				while ( (builder[count] = str[count-5]) ) {
-					count++;
-				}
-				builder[count++] = ':';
-				builder[count++] = ' ';
-				builder[count++] = 'c';
-				builder[count++] = 'o';
-				builder[count++] = 'm';
-				builder[count++] = 'm';
-				builder[count++] = 'a';
-				builder[count++] = 'n';
-				builder[count++] = 'd';
-				builder[count++] = ' ';
-				builder[count++] = 'n';
-				builder[count++] = 'o';
-				builder[count++] = 't';
-				builder[count++] = ' ';
-				builder[count++] = 'f';
-				builder[count++] = 'o';
-				builder[count++] = 'u';
-				builder[count++] = 'n';
-				builder[count++] = 'd';
-
-				mvprintw( curLine, 1, "%s", builder );
-				curLine += 2;
-			}
-
-			mvprintw(curLine, 1, ">");
-		}
-	} else {
-		mvtermprint( 5, 1, "SET TERMINAL/INQUIRE", TYPE_SPEED);
-
-		mvtermprint( 7, 1, "RIT-V300", PRINT_SPEED);
-
-		mvtermprint( 9, 1, "SET FILE/PROTECTION=OWNER:RWED ACCOUNTS.F", TYPE_SPEED);
-
-		mvtermprint( 10, 1, "SET HALT RESTART/MAINT", TYPE_SPEED);
-
-		mvtermprint( 12, 1, "Initializing Robco Industries(TM) MF Boot Agent v2.3.0", PRINT_SPEED);
-		mvtermprint( 13, 1, "RETROS BIOS", PRINT_SPEED);
-		mvtermprint( 14, 1, "RBIOS-4.02.08.00 52EE5.E7.E8", PRINT_SPEED);
-		mvtermprint( 15, 1, "Copyright 2201-2203 Robco Ind.", PRINT_SPEED);
-		mvtermprint( 16, 1, "Uppermem: 64 KB", PRINT_SPEED);
-		mvtermprint( 17, 1, "Root (5A8)", PRINT_SPEED);
-		mvtermprint( 18, 1, "Maintenance Mode", PRINT_SPEED);
-		
-		mvtermprint( 20, 1, "RUN DEBUG/ACCOUNTS.F", TYPE_SPEED);
-	}
-	
-	clear();
-	
-	noecho();						/* Silence user input */
+	if ( hardmode )
+		manualinputmode();
+	else
+		autoinputmode();
 	
 	setup();
 	
@@ -317,7 +208,7 @@ int main(int argc, char **argv) {
 			break;
 		}
 		
-		/* 
+		/*
 		if inside a word
 			if key right
 				if not at MAX, go to arraystartposition + WORDLENGTH + 1
@@ -329,6 +220,9 @@ int main(int argc, char **argv) {
 }
 
 void setup() {
+	clear();
+	noecho();						/* Silence user input */
+	
 	/* Board Set-up //////////////////////////////////////////////////////////*/
 	mvprintw( 22, 41, ">" );
 	refresh();
@@ -651,7 +545,17 @@ void highlight() {
 
 char * stringatcursor() { 		/* TODO: refactor heavily */
 	if (insideWord() >= 0) { 	/* Cursor is in word. */
-		return passwords[0];	/* TODO this will only print the first password */
+		
+		char *check = malloc(sizeof(char) * passwordLength);
+		
+		int k = insideWord();
+		
+		int i;
+		for ( i=0; i<passwordLength; i++ ) {
+			check[i] = board[k++];
+		};
+
+		return check;
 	} else {					/* Cursor is on a single char. */
 		char *returner = malloc(sizeof(char) * 2);
 		returner[0] = board[yxtoarray(cur.y, cur.x)];
@@ -722,15 +626,19 @@ void accesssystem() {
 	clear();
 	
 	mvtermprint( 1, 1, "WELCOME TO ROBCO INDUSTRIES (TM) TERMLINK", PRINT_SPEED );
-	mvtermprint( 3, 1, "LOGIN ADMIN", TYPE_SPEED );	
+	mvtermprint( 3, 1, " LOGIN ADMIN", TYPE_SPEED );	
 	mvtermprint( 5, 1, "ENTER PASSWORD NOW", PRINT_SPEED );	
 	
 	mvprintw( 7, 1, ">");
+	refresh();
+	usleep(1000000); /* TODO: get exact time */
 	int i;
 	for (i=0; i < passwordLength; i++) {
 		mvprintw(7, 3+i, "*");
-		/* TODO: Make this use mvtermprint OR implement usleep()*/
+		usleep(TYPE_SPEED*3);
+		refresh();
 	}
+	usleep(1000000); /* TODO: get exact time */
 	
 	clear();
 
@@ -797,14 +705,12 @@ void accesssystem() {
 			break;
 		}
 	}
-	
-	/* TODO: print ">" with blinking cursor at bottom */
 
 	exituos();
 }
 
 void exituos() {
-	/* free all alloc'ed memory */
+	/* TODO: free all alloc'ed memory */
 	free(hacks);
 	free(messages);
 	free(passwords);
@@ -833,4 +739,104 @@ void lockterminal() {
 	
 	getch();
 	exituos();
+}
+
+void manualinputmode() {
+	int curLine = 5;
+
+	mvprintw( curLine, 1, ">") ;
+
+	char str[80]; /* TODO: Find number + enforce */
+
+	boolean instartup = TRUE;
+
+	while ( instartup ) {
+		
+		getstr( str );
+
+		if ( strcmp( str, "SET TERMINAL/INQUIRE" ) == 0 ) {
+			curLine += 2;
+			mvprintw( curLine, 1, "RIT-V300" );
+			curLine += 2;
+		} else if ( strcmp( str, "SET FILE/PROTECTION=OWNER:RWED ACCOUNTS.F" ) == 0) {
+			curLine++;
+		} else if ( strcmp( str, "SET HALT RESTART/MAINT" ) == 0 ) {
+			curLine += 2;
+			mvtermprint( curLine++, 1, "Initializing Robco Industries(TM) MF Boot Agent v2.3.0", PRINT_SPEED);
+			mvtermprint( curLine++, 1, "RETROS BIOS", PRINT_SPEED);
+			mvtermprint( curLine++, 1, "RBIOS-4.02.08.00 52EE5.E7.E8", PRINT_SPEED);
+			mvtermprint( curLine++, 1, "Copyright 2201-2203 Robco Ind.", PRINT_SPEED);
+			mvtermprint( curLine++, 1, "Uppermem: 64 KB", PRINT_SPEED);
+			mvtermprint( curLine++, 1, "Root (5A8)", PRINT_SPEED);
+			mvtermprint( curLine, 1, "Maintenance Mode", PRINT_SPEED);
+			curLine += 2;
+		} else if ( strcmp( str, "RUN DEBUG/ACCOUNTS.F" ) == 0 ) {
+			instartup = FALSE;
+		} else if ( strcmp( str, "EXIT" ) == 0 ) {
+			curLine += 2;
+			mvtermprint( curLine, 1, "EXITING...", PRINT_SPEED );
+			refresh();
+			usleep(1000000);
+			exituos();
+		} else {
+			curLine += 2;
+
+			char builder[80];
+			builder[0] = 'U';
+			builder[1] = 'O';
+			builder[2] = 'S';
+			builder[3] = ':';
+			builder[4] = ' ';
+
+			int count = 5;
+
+			while ( (builder[count] = str[count-5]) ) {
+				count++;
+			}
+			builder[count++] = ':';
+			builder[count++] = ' ';
+			builder[count++] = 'c';
+			builder[count++] = 'o';
+			builder[count++] = 'm';
+			builder[count++] = 'm';
+			builder[count++] = 'a';
+			builder[count++] = 'n';
+			builder[count++] = 'd';
+			builder[count++] = ' ';
+			builder[count++] = 'n';
+			builder[count++] = 'o';
+			builder[count++] = 't';
+			builder[count++] = ' ';
+			builder[count++] = 'f';
+			builder[count++] = 'o';
+			builder[count++] = 'u';
+			builder[count++] = 'n';
+			builder[count++] = 'd';
+
+			mvprintw( curLine, 1, "%s", builder );
+			curLine += 2;
+		}
+
+		mvprintw(curLine, 1, ">");
+	}
+}
+
+void autoinputmode() {
+	mvtermprint( 5, 1, "SET TERMINAL/INQUIRE", TYPE_SPEED);
+
+	mvtermprint( 7, 1, "RIT-V300", PRINT_SPEED);
+
+	mvtermprint( 9, 1, "SET FILE/PROTECTION=OWNER:RWED ACCOUNTS.F", TYPE_SPEED);
+
+	mvtermprint( 10, 1, "SET HALT RESTART/MAINT", TYPE_SPEED);
+
+	mvtermprint( 12, 1, "Initializing Robco Industries(TM) MF Boot Agent v2.3.0", PRINT_SPEED);
+	mvtermprint( 13, 1, "RETROS BIOS", PRINT_SPEED);
+	mvtermprint( 14, 1, "RBIOS-4.02.08.00 52EE5.E7.E8", PRINT_SPEED);
+	mvtermprint( 15, 1, "Copyright 2201-2203 Robco Ind.", PRINT_SPEED);
+	mvtermprint( 16, 1, "Uppermem: 64 KB", PRINT_SPEED);
+	mvtermprint( 17, 1, "Root (5A8)", PRINT_SPEED);
+	mvtermprint( 18, 1, "Maintenance Mode", PRINT_SPEED);
+	
+	mvtermprint( 20, 1, "RUN DEBUG/ACCOUNTS.F", TYPE_SPEED);
 }
