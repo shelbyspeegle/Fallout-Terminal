@@ -13,6 +13,9 @@
 #include <ctype.h>
 #include <time.h> 							/* for srand(time(NULL)) */
 
+#include "common.h"							/* Include common data types */
+#include "password.h"
+
 #define MAX_MESSAGES 15
 #define MAX_MESSAGE_LENGTH 13
 #define NUM_PASSWORDS 10 					/* i think it is 17 */
@@ -20,15 +23,7 @@
 #define START_Y 6
 #define START_X 8
 
-typedef int boolean;
-#define TRUE 1
-#define FALSE 0
 
-struct point {
-	int y;
-	int x;
-};
-typedef struct point Point;
 
 char *registers[] = {
 	"0xF964", "0xF970", "0xF97C", "0xF988", "0xF994", "0xF9A0", "0xF9AC",
@@ -40,18 +35,19 @@ char *registers[] = {
 
 char **messages; 				/* Array of message strings. */
 char board[408]; 				/* Board of 408 chars. */
-int hackLocations[NUM_HACKS]; 	/* Series of array positions where hacks are */
-int passLocations[] = {0,21,55,79,111,175,220,270,300,390}; /*TODO: make dynamic */
+int hackLocations[NUM_HACKS]; 			/* Series of array positions where hacks are */
+int passLocations[1]; /*TODO: make dynamic */
 int passwordLength = 8; 		/* TODO: make dynamic */
 char **hacks;
-char **passwords;
+/* char **passwords; */
+PasswordPtr *passwords;
 int rows, cols;
 int trysLeft = 4;
 int correct;	/* The index position of the right password in passLocations[] */
 Point cur;
 int TYPE_SPEED = 24000; /* TODO: make these constants when program is finished */
 int PRINT_SPEED = 18000;
-boolean debug = FALSE;
+boolean debug = TRUE;
 boolean hardmode = FALSE;
 
 void setup();
@@ -233,7 +229,7 @@ void setup() {
 	
 	messages = malloc( sizeof(char*) * MAX_MESSAGES);
 	hacks = malloc( sizeof(char*) * NUM_HACKS);
-	passwords = malloc( sizeof(char*) * NUM_PASSWORDS );
+	passwords = malloc( sizeof(PasswordPtr *) * NUM_PASSWORDS );
 	mvtermprint( 1, 1, "ROBCO INDUSTRIES (TM) TERMLINK PROTOCOL", PRINT_SPEED );
 	mvtermprint( 2, 1, "ENTER PASSWORD NOW", PRINT_SPEED );
 	mvtermprint( 4, 1, "4 ATTEMPT(S) LEFT : ", PRINT_SPEED );
@@ -254,7 +250,7 @@ void setup() {
 	for (i = 0; i < 408; i++) {
 		board[i] = genTrash();
 	}
-	
+
 	genPasswords();
 
 	/* TODO: clean up the code below, it is pretty messy */
@@ -467,21 +463,22 @@ void genPasswords() {			/* Fill the passwords array with Passwords */
 	/* TODO: use passwordLength */
 	/* TODO: randomly pick words from list */
 	
-	passwords[0] = "DELICACY";
-	passwords[1] = "ABANDONS";
-	passwords[2] = "CASHBACK";
-	passwords[3] = "GREENERY";
-	passwords[4] = "TADPOLES";
-	passwords[5] = "KNITPICK";								
-	passwords[6] = "GRUELING";
-	passwords[6] = "ASSESSOR";
-	passwords[7] = "CAUTIONS";
-	passwords[8] = "CANNIBIS";
-	passwords[9] = "ACCEPTED";
+	passwords[0] = createPassword("DELICACY", 0);
+	passwords[1] = createPassword("ABANDONS", 21);
+	passwords[2] = createPassword("CASHBACK", 55);
+	passwords[3] = createPassword("GREENERY", 79);
+	passwords[4] = createPassword("TADPOLES", 111);
+	passwords[5] = createPassword("KNITPICK", 175);								
+	passwords[6] = createPassword("GRUELING", 220);
+	passwords[7] = createPassword("ASSESSOR", 270);
+	passwords[8] = createPassword("CAUTIONS", 300);
+	passwords[9] = createPassword("CANNIBIS", 390);
 	
 	int max = NUM_PASSWORDS-1;
 	int min = 0;
 	correct = ( rand() % (max+1-min) ) + min; /* 0, NUM_PASSWORDS-1 */
+	
+	passwords[correct]->correct = TRUE;
 	
 	/*
 		TODO: implement this
@@ -495,9 +492,9 @@ void genPasswords() {			/* Fill the passwords array with Passwords */
 	int currLocation = 0;
 	int i;
 	for ( i = 0; i < NUM_PASSWORDS; i++ ) {
-		currLocation = passLocations[i];
+		currLocation = passwords[i]->position;
 		
-		char *s = passwords[i];
+		char *s = passwords[i]->content;
 		char c;
 		int j = 0;
 		while ( (c = s[j]) ) {
@@ -516,8 +513,8 @@ int insideWord() { /* if inside word, return array start position, else -1 */
 	
 	int i;
 	for (i = 0; i < NUM_PASSWORDS; i++) { /* iterate through all words */
-		if (a >= passLocations[i] && a < (passLocations[i] + passwordLength )) {
-			return passLocations[i];
+		if (a >= passwords[i]->position && a < passwords[i]->position + passwordLength ) {
+			return passwords[i]->position;
 		}
 	}
 	
@@ -605,7 +602,8 @@ int numberofcorrectchars(const char *checkword) {
 	if (strlen(checkword) != passwordLength) {
 		/* TODO: properly free memory and end the program */
 		endwin();
-		fprintf(stderr, "ERROR: numberofcorrectchars called on string of length%i when passwords are of length %i.\n", (int)strlen(checkword), passwordLength);
+		fprintf(stderr, "ERROR: numberofcorrectchars called on string of length %i when passwords are of length %i.\n", 
+				(int) strlen(checkword), passwordLength);
 		exit(1);
 	}
 	
@@ -613,7 +611,7 @@ int numberofcorrectchars(const char *checkword) {
 	
 	int i;
 	for (i=0; i < passwordLength; i++) {
-		if (passwords[correct][i] == checkword[i]) {
+		if (passwords[correct]->content[i] == checkword[i]) {
 			count++;
 		}
 	}
@@ -713,9 +711,12 @@ void exituos() {
 	/* TODO: free all alloc'ed memory */
 	free(hacks);
 	free(messages);
+	
+	int i;
+	for ( i = 0; i < NUM_PASSWORDS; i++ ) {
+		freePassword(passwords[i]);
+	}
 	free(passwords);
-	/* free(board); */
-	/* free(registers); */
 	
 	endwin(); /* End ncurses mode */
 	exit(0);  /* Exit with success error code */

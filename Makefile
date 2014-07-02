@@ -6,7 +6,7 @@ PROGS=hackterm
 
 all: $(PROGS)
 
-hackterm: hackterm.o
+hackterm: hackterm.o password.o
 	$(CC) $(CFLAGS) -o $@ $^ $(LFLAGS)
 
 -include *.d
