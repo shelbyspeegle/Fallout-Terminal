@@ -16,6 +16,7 @@
 #include "common.h"							/* Include common data types */
 #include "password.h"
 
+#define _BSD_SOURCE
 #define MAX_MESSAGES 15
 #define MAX_MESSAGE_LENGTH 13
 #define NUM_PASSWORDS 10 					/* i think it is 17 */
