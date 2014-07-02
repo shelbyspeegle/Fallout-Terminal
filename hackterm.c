@@ -5,6 +5,8 @@
  *      Author: shelbyspeegle
  */
 
+#define _BSD_SOURCE
+
 #include <ncurses.h>						/* ncurses.h includes stdio.h */
 #include <string.h>
 #include <unistd.h>
@@ -16,7 +18,6 @@
 #include "common.h"							/* Include common data types */
 #include "password.h"
 
-#define _BSD_SOURCE
 #define MAX_MESSAGES 15
 #define MAX_MESSAGE_LENGTH 13
 #define NUM_PASSWORDS 10 					/* i think it is 17 */
@@ -709,14 +710,8 @@ void accesssystem() {
 }
 
 void exituos() {
-	/* TODO: free all alloc'ed memory */
 	free(hacks);
 	free(messages);
-	
-	int i;
-	for ( i = 0; i < NUM_PASSWORDS; i++ ) {
-		freePassword(passwords[i]);
-	}
 	free(passwords);
 	
 	endwin(); /* End ncurses mode */
