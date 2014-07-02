@@ -41,7 +41,6 @@ int hackLocations[NUM_HACKS]; 			/* Series of array positions where hacks are */
 int passLocations[1]; /*TODO: make dynamic */
 int passwordLength = 8; 		/* TODO: make dynamic */
 char **hacks;
-/* char **passwords; */
 PasswordPtr *passwords;
 int rows, cols;
 int trysLeft = 4;
@@ -712,7 +711,6 @@ void accesssystem() {
 void exituos() {
 	free(hacks);
 	free(messages);
-	free(passwords);
 	
 	endwin(); /* End ncurses mode */
 	exit(0);  /* Exit with success error code */
