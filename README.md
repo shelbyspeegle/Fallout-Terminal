@@ -61,7 +61,6 @@ Basic features: (Functionality that the actual game has)
 - Add how to install ncurses for requirements mac section.
 - Add lock screen transition where all lines on the screen move up and away.
 - Erase word in bottom right when correct password is entered, like in-game.
-- User can input trash as guess.
 - When user has one word left, hacks give "Entry denied" and dont get used.
 - Hacks get replaced with ........... once used.
 
