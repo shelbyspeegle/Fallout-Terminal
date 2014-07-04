@@ -64,7 +64,6 @@ Basic features: (Functionality that the actual game has)
 - When user has one word left, hacks give "Entry denied" and dont get used.
 - Hacks get replaced with ........... once used.
 
-
 WishList:
 - Generate registers dynamically so every game is a little different.
 - Add capability of running a pseudo-terminal once game is complete.
