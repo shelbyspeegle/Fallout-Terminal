@@ -365,8 +365,17 @@ boolean tryPassword() {
 			pushmessage( stringbuild );
 			trysLeft--;
 		}
+	} else { /* Trash */
+		pushmessage( stringatcursor() );
+		pushmessage( "Entry denied" );
+		
+		char *stringbuild = malloc(sizeof(char) * MAX_MESSAGE_LENGTH);
+		sprintf(stringbuild, "0/%i correct.", passwordLength);
+		pushmessage( stringbuild );
+		trysLeft--;
 	}
-	/* TODO: test for hacks and trash */
+	
+	/* TODO: test for hacks */
 	
 	/*
 	else if (insideHack() >= 0) {
@@ -378,8 +387,6 @@ boolean tryPassword() {
 	 pushmessage("Allowance");
 		pushmessage("replenished.");
 		}
-	If trash
-		TODO: what does trash do?
 	*/
 	
 	return FALSE;
