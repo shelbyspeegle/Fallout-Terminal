@@ -51,17 +51,20 @@ For aspects of the game that I have not implemented yet, I have in place keys th
 | 'a' | Grants access.                                          |
 
 #<a name="to-do"></a>To-Do
-Basic features: (Functionality that the in-game experience contains)
+Basic features: (Functionality that the actual game has)
 - Generate random words of n length.
 - Generate and add bracket 'hacks'.
 - Randomly place objects on board.
-- Right arrow from highlighted word should move to next board space on same line.
 - Allow user to control experience from command line args.
   * Option for difficulty settings.
 - Make RobCo UOS centered at all terminal resolutions.
 - Add how to install ncurses for requirements mac section.
 - Add lock screen transition where all lines on the screen move up and away.
 - Erase word in bottom right when correct password is entered, like in-game.
+- User can input trash as guess.
+- When user has one word left, hacks give "Entry denied" and dont get used.
+- Hacks get replaced with ........... once used.
+
 
 WishList:
 - Generate registers dynamically so every game is a little different.
