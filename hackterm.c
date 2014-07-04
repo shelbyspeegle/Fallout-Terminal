@@ -5,7 +5,7 @@
  *      Author: shelbyspeegle
  */
 
-#define _BSD_SOURCE
+#define _BSD_SOURCE							/* My Linux machine needs this */
 
 #include <ncurses.h>						/* ncurses.h includes stdio.h */
 #include <string.h>
@@ -25,8 +25,6 @@
 #define START_Y 6
 #define START_X 8
 
-
-
 char *registers[] = {
 	"0xF964", "0xF970", "0xF97C", "0xF988", "0xF994", "0xF9A0", "0xF9AC",
 	"0xF9B8", "0xF9C4", "0xF9D0", "0xF9DC", "0xF9E8", "0xF9F4", "0xFA00",
@@ -34,12 +32,10 @@ char *registers[] = {
 	"0xFA60", "0xFA6C", "0xFA78", "0xFA84", "0xFA90", "0xFA9C", "0xFAA8", 
 	"0xFA84", "0xFAC0", "0xFACC", "0xFAD8", "0xFAE4", "0xFAF0"
 };
-
 char **messages; 				/* Array of message strings. */
 char board[408]; 				/* Board of 408 chars. */
 int hackLocations[NUM_HACKS]; 			/* Series of array positions where hacks are */
-int passLocations[1]; /*TODO: make dynamic */
-int passwordLength = 8; 		/* TODO: make dynamic */
+int passwordLength; 		/* TODO: make dynamic */
 char **hacks;
 PasswordPtr *passwords;
 int rows, cols;
@@ -48,7 +44,7 @@ int correct;	/* The index position of the right password in passLocations[] */
 Point cur;
 int TYPE_SPEED = 24000; /* TODO: make these constants when program is finished */
 int PRINT_SPEED = 18000;
-boolean debug = TRUE;
+boolean debug = FALSE;
 boolean hardmode = FALSE;
 
 void setup();
@@ -72,16 +68,17 @@ void exituos();
 void lockterminal();
 void manualinputmode();
 void autoinputmode();
+int calculatenextcurx( int key_direction );
 
-int main(int argc, char **argv) {
+int main( int argc, char **argv ) {
 	
-	srand(time(0)); /* Seed rand with this so it is more random */
+	srand( time(0) ); /* Seed rand with this so it is more random */
 	
-	initscr();						/* Start ncurses mode */
-	getmaxyx(stdscr,rows,cols);		/* Get the number of rows and columns */
-	keypad(stdscr, TRUE);			/* Converts arrow key input to usable chars */
+	initscr();											/* Start ncurses mode */
+	getmaxyx( stdscr, rows, cols );	/* Get the number of rows and columns */
+	keypad( stdscr, TRUE );					/* Converts arrow key input to usable chars */
 
-	if (rows < 24 || cols < 55) {	/* Check to see if window is big enough */
+	if (rows < 24 || cols < 55) {		/* Check to see if window is big enough */
 		
 		/*TODO: Make terminal centered at all resolutions */
 		
@@ -92,6 +89,8 @@ int main(int argc, char **argv) {
 		
 		/* 53 for play area, +1 on each side for padding */
 	}
+	
+	passwordLength = 8;
 	
 	/* Cut to the chase if debugging */
 	if ( debug ) TYPE_SPEED = PRINT_SPEED = 0;
@@ -155,30 +154,34 @@ int main(int argc, char **argv) {
 			usleep(1000000*3);
 			accesssystem();
 		}
-
+		
 		int uInput = getch();	/* Get user input from keyboard (pause) */
-		usleep(10); 			/* Reduces cursor jump if arrows are held down */
+		usleep(10); 					/* Reduces cursor jump if arrows are held down */
 		
 		switch (uInput) {
-		case '\n' :				/* TODO: test Linux */
+		case '\n' :						/* TODO: test Linux */
 			loggedin = tryPassword();
 			break;
 		case KEY_UP :
 			if (cur.y != 6)
 				cur.y--;
 			break;
-		case KEY_LEFT :
-			if (cur.x == 28)
-				cur.x = 19;
-			else if (cur.x != 8)
-				cur.x--;
-			break;
 		case KEY_DOWN :
 			if (cur.y != 22)
 				cur.y++;
 			break;
+		case KEY_LEFT :
+			if ( insideWord() > -1 )	/* If the cursor is inside a word */
+				cur.x = calculatenextcurx( uInput ); /* Figure out the next cur.x location. */
+			else if (cur.x == 28)			/* If the cursor is at the left bound of the right side */
+				cur.x = 19;								/* Move the cursor to the right bound of the left side. */
+			else if (cur.x != 8)			/* As long as the cursor is not at the far left of the board */
+				cur.x--;									/* Move the cursor left. */
+			break;
 		case KEY_RIGHT :
-			if (cur.x == 19)
+			if ( insideWord() > -1 )	/* TODO comment all of the rest of this up, or make the code readable. */
+				cur.x = calculatenextcurx( uInput );
+			else if (cur.x == 19)
 				cur.x = 28;
 			else if (cur.x != 39)
 				cur.x++;
@@ -204,14 +207,6 @@ int main(int argc, char **argv) {
 		default:
 			break;
 		}
-		
-		/*
-		if inside a word
-			if key right
-				if not at MAX, go to arraystartposition + WORDLENGTH + 1
-			if key left
-				if not at 0, go to arraystartposition of word - 1
-		*/
 	}
 	exituos();
 }
@@ -469,7 +464,7 @@ void genPasswords() {			/* Fill the passwords array with Passwords */
 	passwords[2] = createPassword("CASHBACK", 55);
 	passwords[3] = createPassword("GREENERY", 79);
 	passwords[4] = createPassword("TADPOLES", 111);
-	passwords[5] = createPassword("KNITPICK", 175);								
+	passwords[5] = createPassword("KNITPICK", 199);								
 	passwords[6] = createPassword("GRUELING", 220);
 	passwords[7] = createPassword("ASSESSOR", 270);
 	passwords[8] = createPassword("CAUTIONS", 300);
@@ -563,8 +558,8 @@ char * stringatcursor() { 		/* TODO: refactor heavily */
 }
 
 void mvtermprint(int y, int x, char *string, int speed) {
-		
-	/*	
+	
+	/*
 		TODO: Debug - why does strlen return 14?
 		if (len == 14) {
 			mvprintw(0,0, "FAILURE");
@@ -834,4 +829,57 @@ void autoinputmode() {
 	mvtermprint( 18, 1, "Maintenance Mode", PRINT_SPEED);
 	
 	mvtermprint( 20, 1, "RUN DEBUG/ACCOUNTS.F", TYPE_SPEED);
+}
+
+
+/* TODO comment the code below properly */
+int calculatenextcurx( int key_direction ) {
+	int startofword = insideWord();
+	int wordstartline = startofword/12;
+	int curArray = yxtoarray( cur.y, cur.x );
+	int returnVal;
+	
+	if ( key_direction == KEY_LEFT ) {											/* Left key was pressed. */
+		if ( curArray <= 203 ) { 															/* Cursor is on the left side of the board. */
+			if ( curArray/12 == wordstartline ) { 							/* Cursor is on same line as start of word */
+				if ( startofword - 1 >= wordstartline * 12)
+					returnVal = arraytopoint( startofword ).x - 1;
+				else
+					returnVal = cur.x;					
+			} else { 																						/* Cursor is not on same line as start of word. */
+				returnVal = cur.x;
+			}
+		} else {																							/* Cursor is on the right side of the board. */
+			if ( curArray/12 == wordstartline ) {								/* Cursor is on same line as start of word */
+				if ( arraytopoint( startofword ).x == 28)
+					returnVal = 19;
+				else
+					returnVal = arraytopoint( startofword ).x - 1;
+			} else {																						/* Cursor is not on same line as start of word */
+				returnVal = 19;
+			}
+		}
+	} else { 																								/* Right key was pressed */
+		if ( curArray <= 203 ) {															/* Cursor is on the left side of the board. */
+			if ( curArray/12 == wordstartline ) {								/* Cursor is on same line as start of word */
+				if ( wordstartline != (startofword + passwordLength)/12)
+					returnVal = 28;
+				else
+					returnVal = arraytopoint( insideWord() ).x + passwordLength;
+			} else {																						/* Cursor is not on same line as start of word */
+				returnVal = START_X + passwordLength - (12 - ( startofword - ( wordstartline * 12 ) ) );
+			}
+		} else {																							/* Cursor is on the right side of the board. */
+			if ( curArray/12 == wordstartline ) {								/* Cursor is on same line as start of word */
+				if ( wordstartline == (startofword + passwordLength)/12)
+					returnVal = arraytopoint( insideWord() ).x + passwordLength;
+				else
+					returnVal = cur.x;
+			} else {																						/* Cursor is not on same line as start of word */
+				returnVal = START_X + 20 + passwordLength - (12 - ( startofword - ( wordstartline * 12 ) ) );
+			}
+		}
+	}
+	
+	return returnVal;
 }
