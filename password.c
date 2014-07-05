@@ -5,7 +5,9 @@ PasswordPtr createPassword( const char *str, int position) {
 	newPassword->size = strlen(str);
 	newPassword->position = position;
 	newPassword->correct = FALSE;
-	newPassword->content = (char *) str;
+	newPassword->content = malloc( sizeof(char) * (newPassword->size + 1) );
+	newPassword->removed = FALSE;
+	strcpy(newPassword->content, str);
 	
 	return newPassword;
 }

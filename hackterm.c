@@ -21,7 +21,7 @@
 #define MAX_MESSAGES 15
 #define MAX_MESSAGE_LENGTH 13
 #define NUM_PASSWORDS 10 					/* i think it is 17 */
-#define NUM_HACKS 5 						/* TODO: find the real number */
+#define NUM_HACKS 2 						/* TODO: find the real number */
 #define START_Y 6
 #define START_X 8
 
@@ -36,7 +36,7 @@ char **messages; 				/* Array of message strings. */
 char board[408]; 				/* Board of 408 chars. */
 int hackLocations[NUM_HACKS]; 			/* Series of array positions where hacks are */
 int passwordLength; 		/* TODO: make dynamic */
-char **hacks;
+PasswordPtr *hacks;
 PasswordPtr *passwords;
 int rows, cols;
 int trysLeft = 4;
@@ -46,6 +46,7 @@ int TYPE_SPEED = 24000; /* TODO: make these constants when program is finished *
 int PRINT_SPEED = 18000;
 boolean debug = FALSE;
 boolean hardmode = FALSE;
+int passwordsleftonboard = NUM_PASSWORDS;
 
 void setup();
 void printinputarea();
@@ -58,7 +59,9 @@ int yxtoarray(int y, int x);
 Point arraytopoint(int a);
 char genTrash();
 void genPasswords();
+void genHacks();
 int insideWord();
+int insideHack();
 void highlight();
 char *stringatcursor();
 void mvtermprint(int y, int x, char *string, int speed);
@@ -69,6 +72,7 @@ void lockterminal();
 void manualinputmode();
 void autoinputmode();
 int calculatenextcurx( int key_direction );
+void refreshpasswords();
 
 int main( int argc, char **argv ) {
 	
@@ -248,6 +252,8 @@ void setup() {
 	}
 
 	genPasswords();
+	refreshpasswords();
+	genHacks();
 
 	/* TODO: clean up the code below, it is pretty messy */
 	/* Print Registers ///////////////////////////////////////////////////////*/
@@ -365,6 +371,65 @@ boolean tryPassword() {
 			pushmessage( stringbuild );
 			trysLeft--;
 		}
+	} else if ( insideHack() >= 0) {
+		
+		int a = insideHack();
+		
+		if (passwordsleftonboard > 1) {
+
+			int i;
+			for (i = 0; i < NUM_HACKS; i++) { /* iterate through all words */
+				if (a == hacks[i]->position ) {
+					pushmessage( hacks[i]->content );
+					hacks[i]->position = -1;			/* make this hack unusable */
+				}
+			}
+		
+			pushmessage("Dud removed.");
+		
+			boolean flag = FALSE;
+		
+			/* TODO maybe try a do-while here. */
+			while ( !flag && passwordsleftonboard > 1 ) { /* Search for incorrect password to remove as a dud. */
+				int min = 0;
+				int max = NUM_PASSWORDS-1;
+	
+				int i = ( rand() % (max+1-min) ) + min;
+			
+				if (!passwords[i]->correct && !passwords[i]->removed) {
+					/* Copy over contents of incorrect password with dots. */
+				
+					char *pointer = passwords[i]->content;
+					passwords[i]->removed = TRUE;
+					passwordsleftonboard--;
+				
+					int j = 0;
+					while (pointer[j] != '\0') {
+						pointer[j] = '.';
+						j++;
+					}
+				
+					flag = TRUE;
+				}
+			}
+			
+			refreshpasswords();
+		
+			/* TODO provide logic for allowance replenishing */
+			
+		} else { /* Only one password is left on the board. */
+			
+			/* TODO refactor this. It is a serious waste. */
+			
+			int i;
+			for (i = 0; i < NUM_HACKS; i++) { /* iterate through all words */
+				if (a == hacks[i]->position ) {
+					pushmessage( hacks[i]->content );
+				}
+			}
+			
+			pushmessage("Entry denied");
+		}
 	} else { /* Trash */
 		pushmessage( stringatcursor() );
 		pushmessage( "Entry denied" );
@@ -462,6 +527,36 @@ char genTrash() {
 	return c;
 }
 
+void genHacks() {
+	/* TODO randomly generate hacks 
+	<;*    >
+     (#?)
+	{__'-\:}
+	{#+}
+	[*_?^!']
+	*/
+	
+	hacks[0] = createPassword("{%%!$[@;\\:}", 36);
+	hacks[1] = createPassword("{}", 48);
+	
+	int currLocation = 0;
+	int i;
+	for ( i = 0; i < NUM_HACKS; i++ ) {
+		currLocation = hacks[i]->position;
+		
+		char *s = hacks[i]->content;
+		char c;
+		int j = 0;
+		while ( (c = s[j]) ) {
+			board[currLocation] = c;
+			
+			j++;
+			currLocation++;
+		}
+	}
+	
+}
+
 void genPasswords() {			/* Fill the passwords array with Passwords */
 	/* TODO: use passwordLength */
 	/* TODO: randomly pick words from list */
@@ -491,24 +586,7 @@ void genPasswords() {			/* Fill the passwords array with Passwords */
 		Randomly place word between i * (from 0 to var-1-WORD_LENGTH)
 	*/
 	
-	/* At each passLocation copy a password */
-	int currLocation = 0;
-	int i;
-	for ( i = 0; i < NUM_PASSWORDS; i++ ) {
-		currLocation = passwords[i]->position;
-		
-		char *s = passwords[i]->content;
-		char c;
-		int j = 0;
-		while ( (c = s[j]) ) {
-			board[currLocation] = c;
-			
-			j++;
-			currLocation++;
-		}
-	}
 	
-	/* TODO: Randomly place hacks here and there */
 }
 
 int insideWord() { /* if inside word, return array start position, else -1 */
@@ -524,17 +602,55 @@ int insideWord() { /* if inside word, return array start position, else -1 */
 	return -1;
 }
 
+int insideHack() { /* if inside word, return array start position, else -1 */
+	int a = yxtoarray(cur.y, cur.x);
+	
+	int i;
+	for (i = 0; i < NUM_HACKS; i++) { /* iterate through all words */
+		if (a == hacks[i]->position )
+			return hacks[i]->position;
+	}
+	
+	return -1;
+}
+
 void highlight() {
 	attron(A_STANDOUT);
 	
 	int a = yxtoarray(cur.y, cur.x);
 	
 	if (insideWord() >= 0) {
+		
+		/* TODO Do removed passwords highlight? */
+		
 		a = insideWord();
-		while ( isalpha(board[a])  ) {
-			mvprintw( arraytopoint(a).y, arraytopoint(a).x, "%c", board[a]);
-			a++;
+		int i;
+		for (i = 0; i < NUM_PASSWORDS; i++) { /* iterate through all words */
+			if (a == passwords[i]->position ) {
+				for ( i=0; i<passwords[i]->size; i++) {
+					mvprintw( arraytopoint(a).y, arraytopoint(a).x, "%c", board[a]);
+					a++;
+				}
+				break;
+			}
 		}
+		
+		attroff(A_STANDOUT);
+		return;
+	} else if (insideHack() >= 0) {
+		a = insideHack();
+
+		int i;
+		for (i = 0; i < NUM_HACKS; i++) { /* iterate through all words */
+			if (a == hacks[i]->position ) {
+				int j;
+				for ( j=0; j<hacks[i]->size; j++) {
+					mvprintw( arraytopoint(a).y, arraytopoint(a).x, "%c", board[a]);
+					a++;
+				}
+			}
+		}
+
 		attroff(A_STANDOUT);
 		return;
 	}
@@ -556,12 +672,24 @@ char * stringatcursor() { 		/* TODO: refactor heavily */
 		};
 
 		return check;
-	} else {					/* Cursor is on a single char. */
-		char *returner = malloc(sizeof(char) * 2);
-		returner[0] = board[yxtoarray(cur.y, cur.x)];
-		returner[1] = '\0';
-		return returner;
+	} else if (insideHack() >= 0) {
+		
+		/* Find the hack that we are inside */
+		int positionofhack = insideHack();
+		
+		int i;
+		for ( i=0; i< NUM_HACKS; i++) {
+			if (hacks[i]->position == positionofhack) {
+				return hacks[i]->content;
+			}
+		}
 	}
+	
+	/* Cursor is on a single char. */
+	char *returner = malloc(sizeof(char) * 2);
+	returner[0] = board[yxtoarray(cur.y, cur.x)];
+	returner[1] = '\0';
+	return returner;
 }
 
 void mvtermprint(int y, int x, char *string, int speed) {
@@ -889,4 +1017,23 @@ int calculatenextcurx( int key_direction ) {
 	}
 	
 	return returnVal;
+}
+
+void refreshpasswords() {
+	/* At each passLocation copy a password */
+	int currLocation = 0;
+	int i;
+	for ( i = 0; i < NUM_PASSWORDS; i++ ) {
+		currLocation = passwords[i]->position;
+		
+		char *s = passwords[i]->content;
+		char c;
+		int j = 0;
+		while ( (c = s[j]) ) {
+			board[currLocation] = c;
+			
+			j++;
+			currLocation++;
+		}
+	}
 }

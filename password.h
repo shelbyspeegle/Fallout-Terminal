@@ -10,9 +10,10 @@ typedef struct password *PasswordPtr;
 
 struct password {
 	char *content;
-    int size;
+  int size;
 	int position;
-    boolean correct;
+	boolean correct;
+	boolean removed;
 };
 
 /**

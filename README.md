@@ -44,11 +44,11 @@ For aspects of the game that I have not implemented yet, I have in place keys th
 
 | Key | Effect                                                  |
 | --- | ------------------------------------------------------- |
-| 'q' | Quit application.                                       |
-| 'e' | Prints a dummy "Dud removed." message to messages area. |
-| '-' | Subtracts one attempt.                                  |
-| '+' | Adds one attempt.                                       |
-| 'a' | Grants access.                                          |
+|  q  | Quit application.                                       |
+|  e  | Prints a dummy "Dud removed." message to messages area. |
+|  -  | Subtracts one attempt.                                  |
+|  +  | Adds one attempt.                                       |
+|  a  | Grants access.                                          |
 
 #<a name="to-do"></a>To-Do
 Basic features: (Functionality that the actual game has)
@@ -57,12 +57,11 @@ Basic features: (Functionality that the actual game has)
 - Randomly place objects on board.
 - Allow user to control experience from command line args.
   * Option for difficulty settings.
-- Make RobCo UOS centered at all terminal resolutions.
 - Add how to install ncurses for requirements mac section.
 - Add lock screen transition where all lines on the screen move up and away.
 - Erase word in bottom right when correct password is entered, like in-game.
-- When user has one word left, hacks give "Entry denied" and dont get used.
-- Hacks get replaced with ........... once used.
+- Print UOS access menu options like in-game.
+
 
 WishList:
 - Generate registers dynamically so every game is a little different.
@@ -70,6 +69,8 @@ WishList:
   * Access some kind of fun files.
 - Allow user to type in password if desired.
 - Allow user to skip terminal printing sequences.
+- Make RobCo UOS centered at all terminal resolutions.
+- Add tab-completion for UOS terminal.
 
 #<a name="dependencies"></a>Dependencies
 
