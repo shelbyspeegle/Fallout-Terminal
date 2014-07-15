@@ -19,11 +19,23 @@ struct password {
 /**
  *	Allocates space for a new Password and its contents.
  */
-PasswordPtr createPassword( const char *str, int position);
+PasswordPtr createPassword( const char *str, int position );
+
+/**
+ *	Allocates space for a new hack and its contents.
+ */
+PasswordPtr createHack( const char *str );
+
+/**
+ *	Set the position of a hack.
+ */
+void setHackPosition( PasswordPtr hack, int position );
+
+
 
 /**
  *	Frees the Password parameter along with its contents.
  */
-void freePassword(PasswordPtr password);
+void freePassword( PasswordPtr password );
 
 #endif /* password.h */

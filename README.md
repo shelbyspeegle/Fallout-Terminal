@@ -53,14 +53,17 @@ For aspects of the game that I have not implemented yet, I have in place keys th
 #<a name="to-do"></a>To-Do
 Basic features: (Functionality that the actual game has)
 - Generate random words of n length.
-- Generate and add bracket 'hacks'.
-- Randomly place objects on board.
+- Generate random bracket 'hacks'.
 - Allow user to control experience from command line args.
   * Option for difficulty settings.
 - Add how to install ncurses for requirements mac section.
 - Add lock screen transition where all lines on the screen move up and away.
 - Erase word in bottom right when correct password is entered, like in-game.
 - Print UOS access menu options like in-game.
+- Make sure that the only matching brackets found on the same line are hacks.
+- Hacks with hacks inside of them should contain said hack in the content.
+- Passwords should be at least one space apart.
+  * Confirm this in game.
 
 
 WishList:

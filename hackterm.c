@@ -20,8 +20,8 @@
 
 #define MAX_MESSAGES 15
 #define MAX_MESSAGE_LENGTH 13
-#define NUM_PASSWORDS 10 					/* i think it is 17 */
-#define NUM_HACKS 2 						/* TODO: find the real number */
+#define NUM_PASSWORDS 10          /* i think it is 17 */
+#define NUM_HACKS 7               /* TODO: find the real number */
 #define START_Y 6
 #define START_X 8
 
@@ -34,7 +34,6 @@ char *registers[] = {
 };
 char **messages; 				/* Array of message strings. */
 char board[408]; 				/* Board of 408 chars. */
-int hackLocations[NUM_HACKS]; 			/* Series of array positions where hacks are */
 int passwordLength; 		/* TODO: make dynamic */
 PasswordPtr *hacks;
 PasswordPtr *passwords;
@@ -44,7 +43,7 @@ int correct;	/* The index position of the right password in passLocations[] */
 Point cur;
 int TYPE_SPEED = 24000; /* TODO: make these constants when program is finished */
 int PRINT_SPEED = 18000;
-boolean debug = FALSE;
+boolean debug = TRUE;
 boolean hardmode = FALSE;
 int passwordsleftonboard = NUM_PASSWORDS;
 
@@ -528,19 +527,87 @@ char genTrash() {
 }
 
 void genHacks() {
-	/* TODO randomly generate hacks 
-	<;*    >
-     (#?)
-	{__'-\:}
-	{#+}
-	[*_?^!']
-	*/
+	/* TODO: Add this logic... If hack is placed inside another, set the contents of the hack we are inside to the hack that is inside. */
 	
-	hacks[0] = createPassword("{%%!$[@;\\:}", 36);
-	hacks[1] = createPassword("{}", 48);
+	/* TODO: Replace this with a for loop that creates random hacks. */
+	hacks[0] = createHack("{%%!$[@;\\:}");
+	hacks[1] = createHack("<;*-#$)>");
+	hacks[2] = createHack("(#?)");
+	hacks[3] = createHack("{__'-\\:}");
+	hacks[4] = createHack("{#+}");
+	hacks[5] = createHack("[*_?^!`]");
+	hacks[6] = createHack("{}");
+	
+	int newhackpositions[NUM_HACKS];
+	int hackrow, hackrowposition, hackstart, hackend, passwordstart, passwordend;
+	
+	int i;
+	for ( i=0; i<NUM_HACKS; i++ ) {
+		boolean validarrayposition = FALSE;
+		
+		while ( !validarrayposition ) {
+			
+			validarrayposition = TRUE; /* TODO: fix... TOO HACKY! */
+			
+			/* Pick a row from 0 - 33 */
+			hackrow = rand() % 34;
+	
+			/* Pick a spot in the row so that the hack remains on a single line. */
+			hackrowposition = rand() % ( 12  - hacks[i]->size ) ;
+	
+			hackstart = ( hackrow*12 ) + hackrowposition;
+			hackend = hackstart + hacks[i]->size;
+						
+			int j;
+			/* Make sure the hack does not collide with any passwords. */
+			for ( j=0; j<NUM_PASSWORDS; j++ ) {
+				passwordstart = passwords[j]->position;
+				passwordend = passwordstart + passwords[j]->size;
+				
+				validarrayposition = validarrayposition && ( hackend < passwordstart || hackstart > passwordend );
+				
+				if ( !validarrayposition ) {
+					break; /* We do not need to look any further. */
+				}
+			}
+			
+			/* If hack collides with other hack, make sure that it is inside. */
+			for ( j=0; j<i; j++ ) {
+				/* Position is not valid if our hack starts at the same spot as another. */
+				if ( hackstart == hacks[j]->position ) {
+					validarrayposition = FALSE;
+					break;
+				}
+				
+				/* Hack can be placed inside another hack. */
+				if ( hackstart > hacks[j]->position && hackstart < hacks[j]->position + hacks[j]->size ) {
+					
+					/* As long as it is nested completely inside. */
+					if ( hackend < hacks[j]->position + hacks[j]->size ) {
+						validarrayposition = validarrayposition && TRUE;
+					} else {
+						validarrayposition = FALSE;
+						break;
+					}
+				}
+				
+				if ( hackstart < hacks[j]->position && hackend < hacks[j]->position + hacks[j]->size ) {
+					validarrayposition = FALSE;
+					break;
+				}
+			}
+		}
+		
+		/* Safe spot for hack successfully found! */
+		newhackpositions[i] = hackstart;
+	}
+	
+	/* Set the locations of the newly created hacks. */
+	for ( i=0; i<NUM_HACKS; i++ ) {
+		setHackPosition( hacks[i], newhackpositions[i] );
+	}
 	
 	int currLocation = 0;
-	int i;
 	for ( i = 0; i < NUM_HACKS; i++ ) {
 		currLocation = hacks[i]->position;
 		
@@ -554,39 +621,54 @@ void genHacks() {
 			currLocation++;
 		}
 	}
-	
 }
 
 void genPasswords() {			/* Fill the passwords array with Passwords */
-	/* TODO: use passwordLength */
-	/* TODO: randomly pick words from list */
 	
-	passwords[0] = createPassword("DELICACY", 0);
-	passwords[1] = createPassword("ABANDONS", 21);
-	passwords[2] = createPassword("CASHBACK", 55);
-	passwords[3] = createPassword("GREENERY", 79);
-	passwords[4] = createPassword("TADPOLES", 111);
-	passwords[5] = createPassword("KNITPICK", 199);								
-	passwords[6] = createPassword("GRUELING", 220);
-	passwords[7] = createPassword("ASSESSOR", 270);
-	passwords[8] = createPassword("CAUTIONS", 300);
-	passwords[9] = createPassword("CANNIBIS", 390);
-	
-	int max = NUM_PASSWORDS-1;
+	int max = 407-1;
 	int min = 0;
+	int newpasswordpositions[NUM_PASSWORDS];
+	
+	int i;
+	for ( i=0; i<NUM_PASSWORDS; i++ ) {
+		boolean notavalidposition = TRUE;
+		int positionfornewpassword;
+		while ( notavalidposition ) {
+			positionfornewpassword = ( rand() % (max+1-min) ) + min; /* Pick a spot on the board */
+
+			/* TODO: This is hacky. Setting flag to FALSE until something below trips it to TRUE */
+			notavalidposition = FALSE;
+			
+			int j;
+			for ( j=0; j<i; j++ ) { /* Make sure current position is clear of every word generated */
+				if ( positionfornewpassword < newpasswordpositions[j]+passwordLength
+						&& positionfornewpassword+passwordLength > newpasswordpositions[j]) {
+					notavalidposition = TRUE;
+				}
+			}
+		}
+		
+		/* Place password at positionfornewpassword */
+		newpasswordpositions[i] = positionfornewpassword;
+	}
+	
+	/* TODO: randomly pick words from list */
+	passwords[0] = createPassword("DELICACY", newpasswordpositions[0]);
+	passwords[1] = createPassword("ABANDONS", newpasswordpositions[1]);
+	passwords[2] = createPassword("CASHBACK", newpasswordpositions[2]);
+	passwords[3] = createPassword("GREENERY", newpasswordpositions[3]);
+	passwords[4] = createPassword("TADPOLES", newpasswordpositions[4]);
+	passwords[5] = createPassword("KNITPICK", newpasswordpositions[5]);
+	passwords[6] = createPassword("GRUELING", newpasswordpositions[6]);
+	passwords[7] = createPassword("ASSESSOR", newpasswordpositions[7]);
+	passwords[8] = createPassword("CAUTIONS", newpasswordpositions[8]);
+	passwords[9] = createPassword("CANNIBIS", newpasswordpositions[9]);
+
+	/* Pick one of the passwords on the board to be correct. */
+	max = NUM_PASSWORDS-1;
+	min = 0;
 	correct = ( rand() % (max+1-min) ) + min; /* 0, NUM_PASSWORDS-1 */
-	
 	passwords[correct]->correct = TRUE;
-	
-	/*
-		TODO: implement this
-		Get total number of spaces in board
-		 subtract WORD_LENGTH * NUM_PASSWORDS
-		Divide by NUM_PASSWORDS = var
-		Randomly place word between i * (from 0 to var-1-WORD_LENGTH)
-	*/
-	
-	
 }
 
 int insideWord() { /* if inside word, return array start position, else -1 */
