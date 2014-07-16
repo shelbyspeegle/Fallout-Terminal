@@ -43,7 +43,7 @@ int correct;	/* The index position of the right password in passLocations[] */
 Point cur;
 int TYPE_SPEED = 24000; /* TODO: make these constants when program is finished */
 int PRINT_SPEED = 18000;
-boolean debug = TRUE;
+boolean debug = FALSE;
 boolean hardmode = FALSE;
 int passwordsleftonboard = NUM_PASSWORDS;
 
