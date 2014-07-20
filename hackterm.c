@@ -625,7 +625,7 @@ void genHacks() {
 
 void genPasswords() {			/* Fill the passwords array with Passwords */
 	
-	int max = 407-1;
+	int max = 407-1-passwordLength;
 	int min = 0;
 	int newpasswordpositions[NUM_PASSWORDS];
 	
