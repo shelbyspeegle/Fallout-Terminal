@@ -22,16 +22,15 @@ struct password {
 PasswordPtr createPassword( const char *str, int position );
 
 /**
- *	Allocates space for a new hack and its contents.
+ *	Allocates space for a new hack and its contents. Generates a hack of random 
+ *  length.
  */
-PasswordPtr createHack( const char *str );
+PasswordPtr createHack();
 
 /**
  *	Set the position of a hack.
  */
 void setHackPosition( PasswordPtr hack, int position );
-
-
 
 /**
  *	Frees the Password parameter along with its contents.

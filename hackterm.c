@@ -17,13 +17,12 @@
 
 #include "common.h"							/* Include common data types */
 #include "password.h"
+#include "utilities.h"
 
 #define MAX_MESSAGES 15
 #define MAX_MESSAGE_LENGTH 13
 #define NUM_PASSWORDS 10          /* i think it is 17 */
 #define NUM_HACKS 7               /* TODO: find the real number */
-#define START_Y 6
-#define START_X 8
 
 char *registers[] = {
 	"0xF964", "0xF970", "0xF97C", "0xF988", "0xF994", "0xF9A0", "0xF9AC",
@@ -50,21 +49,17 @@ int passwordsleftonboard = NUM_PASSWORDS;
 void setup();
 void printinputarea();
 void refreshboard();
-void pushmessage(const char *newMessage);
+void pushmessage( const char *newMessage );
 boolean tryPassword();
-void removeDud(int a);
-void addPasswordsToBoard();
-int yxtoarray(int y, int x);
-Point arraytopoint(int a);
-char genTrash();
+void removeDud( int a );
 void genPasswords();
 void genHacks();
 int insideWord();
 int insideHack();
 void highlight();
 char *stringatcursor();
-void mvtermprint(int y, int x, char *string, int speed);
-int numberofcorrectchars(const char *checkword);
+void mvtermprint( int y, int x, char *string, int speed );
+int numberofcorrectchars( const char *checkword );
 void accesssystem();
 void exituos();
 void lockterminal();
@@ -340,8 +335,8 @@ void pushmessage(const char *newMessage) {
 }
 
 boolean tryPassword() {
-	if (insideWord() >= 0) {
-		int k = insideWord(); /* start of the word */
+	if (insideWord() >= 0) { /** Test if the cursor on a Password. */
+		int k = insideWord(); /* Start of the word */
 		char *check = malloc(sizeof(char) * passwordLength);
 		int j;
 		for (j=0; j<passwordLength; j++) {
@@ -435,21 +430,7 @@ boolean tryPassword() {
 		pushmessage( stringbuild );
 		trysLeft--;
 	}
-	
-	/* TODO: test for hacks */
-	
-	/*
-	else if (insideHack() >= 0) {
-		pushmessage(hackContents);
-		pushmessage("Dud removed.");
-		prints 2 lines
-		or
-		pushmessage(hackContents);
-	 pushmessage("Allowance");
-		pushmessage("replenished.");
-		}
-	*/
-	
+
 	return FALSE;
 }
 
@@ -458,116 +439,45 @@ void removeDud(int a) { /* TODO: unimplemented. */
 	pushmessage(">[*(>]");
 }
 
-int yxtoarray(int y, int x) {
-	/* TODO: think about coordinate conversions earlier on in the program */
-	if ( y >= 6 && y <= 22 ) {
-		y-=6; /* convert y so y origin is 6 */
-		
-		int temp = y*12;
-		
-		if ( x >= 8 && x <= 19 ) {
-			/* left half of board */
-			x -= 8; /* convert x so x origin is 8 */
-			
-			return temp + (x % 12);
-			
-		} else if (x >= 28 && x <= 39) {
-			x -= 27; /* convert x so x origin is 8 TODO: fix this comment */
-			
-			/* right half of board */
-			temp+=203;
-			
-			return temp + (x % 13); /* TODO: why 13? */
-		} else {
-			return -1; /* x is invalid */
-		}
-	} else {
-		return -1; /* y is invalid */
-	}
-}
-
-Point arraytopoint(int a) {
-	
-	Point result;
-	
-	if ( a <= 203 ) 						/* left half */
-		result.x = ( a % 12 ) + START_X;
-	else									/* right half */
-		result.x = ( a % 12 ) + START_X + 20;
-	
-	int reducer = 0;
-	if (a > 203)
-		reducer = 17; /* TODO: revisit this name for clarity */
-	result.y = START_Y + ( ( a/12 ) ) - reducer;
-	
-	return result;
-}
-
-char genTrash() {
-	int min = 1;	/* 31 possible chars i want to pick from randomly for trash. */
-	int max = 31;
-	
-	char c;
-	int i = ( rand() % (max+1-min) ) + min; /* 1-31 */
-	
-	if (i <= 15) { 				/* number is between 1, 15 */
-		c = i + 32;					/* ascii values between 33, 47 */
-	} else if (i <= 22 ) {		/* number is between 16, 22 */
-		c = i + 42;					/* ascii values between 58, 64 */
-	} else if ( i <= 28 ) {		/* number is between 23, 28 */
-		c = i + 68;					/* ascii values between 91, 96 */
-	} else {					/* number is between 29, 31 */
-		c = i + 94;					/* ascii values between 123, 125 */
-	}
-	
-	return c;
-}
-
 void genHacks() {
 	/* TODO: Add this logic... If hack is placed inside another, set the contents of the hack we are inside to the hack that is inside. */
-	
-	/* TODO: Replace this with a for loop that creates random hacks. */
-	hacks[0] = createHack("{%%!$[@;\\:}");
-	hacks[1] = createHack("<;*-#$)>");
-	hacks[2] = createHack("(#?)");
-	hacks[3] = createHack("{__'-\\:}");
-	hacks[4] = createHack("{#+}");
-	hacks[5] = createHack("[*_?^!`]");
-	hacks[6] = createHack("{}");
-	
+
 	int newhackpositions[NUM_HACKS];
 	int hackrow, hackrowposition, hackstart, hackend, passwordstart, passwordend;
-	
+
 	int i;
 	for ( i=0; i<NUM_HACKS; i++ ) {
+
+		hacks[i] = createHack();
+
 		boolean validarrayposition = FALSE;
-		
+
 		while ( !validarrayposition ) {
-			
+
 			validarrayposition = TRUE; /* TODO: fix... TOO HACKY! */
-			
+
 			/* Pick a row from 0 - 33 */
 			hackrow = rand() % 34;
-	
+
 			/* Pick a spot in the row so that the hack remains on a single line. */
 			hackrowposition = rand() % ( 12  - hacks[i]->size ) ;
-	
+
 			hackstart = ( hackrow*12 ) + hackrowposition;
 			hackend = hackstart + hacks[i]->size;
-						
+
 			int j;
 			/* Make sure the hack does not collide with any passwords. */
 			for ( j=0; j<NUM_PASSWORDS; j++ ) {
 				passwordstart = passwords[j]->position;
 				passwordend = passwordstart + passwords[j]->size;
-				
+
 				validarrayposition = validarrayposition && ( hackend < passwordstart || hackstart > passwordend );
-				
+
 				if ( !validarrayposition ) {
 					break; /* We do not need to look any further. */
 				}
 			}
-			
+
 			/* If hack collides with other hack, make sure that it is inside. */
 			for ( j=0; j<i; j++ ) {
 				/* Position is not valid if our hack starts at the same spot as another. */
