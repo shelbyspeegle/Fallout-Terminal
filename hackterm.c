@@ -189,9 +189,6 @@ int main( int argc, char **argv ) {
 			else if (cur.x != 39)
 				cur.x++;
 			break;
-		case 'e' :
-			removeDud(0);
-			break;
 		case '-' :
 			trysLeft--;
 			break;

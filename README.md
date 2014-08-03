@@ -45,7 +45,6 @@ For aspects of the game that I have not implemented yet, I have in place keys th
 | Key | Effect                                                  |
 | --- | ------------------------------------------------------- |
 |  q  | Quit application.                                       |
-|  e  | Prints a dummy "Dud removed." message to messages area. |
 |  -  | Subtracts one attempt.                                  |
 |  +  | Adds one attempt.                                       |
 |  a  | Grants access.                                          |
