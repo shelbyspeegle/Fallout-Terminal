@@ -52,7 +52,6 @@ For aspects of the game that I have not implemented yet, I have in place keys th
 #<a name="to-do"></a>To-Do
 Basic features: (Functionality that the actual game has)
 - Generate random words of n length.
-- Generate random bracket 'hacks'.
 - Allow user to control experience from command line args.
   * Option for difficulty settings.
 - Add how to install ncurses for requirements mac section.
@@ -63,6 +62,9 @@ Basic features: (Functionality that the actual game has)
 - Hacks with hacks inside of them should contain said hack in the content.
 - Passwords should be at least one space apart.
   * Confirm this in game.
+- Passwords can exist inside hacks. These hacks can only be used once the password is removed as a dud.
+- Hacks can share a closing bracket of the same type.
+- Research: Does the "Allowance replenished" hack return all allowances or just one?
 
 
 WishList:
