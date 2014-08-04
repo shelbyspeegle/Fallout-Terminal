@@ -9,31 +9,31 @@ typedef struct password Password;
 typedef struct password *PasswordPtr;
 
 struct password {
-	char *content;
+  char *content;
   int size;
-	int position;
-	boolean correct;
-	boolean removed;
+  int position;
+  boolean correct;
+  boolean removed;
 };
 
 /**
- *	Allocates space for a new Password and its contents.
+ *  Allocates space for a new Password and its contents.
  */
 PasswordPtr createPassword( const char *str, int position );
 
 /**
- *	Allocates space for a new hack and its contents. Generates a hack of random 
- *  length.
+ *  Allocates space for a new hack and its contents. Generates a hack of random
+ *    length.
  */
 PasswordPtr createHack();
 
 /**
- *	Set the position of a hack.
+ *  Set the position of a hack.
  */
 void setHackPosition( PasswordPtr hack, int position );
 
 /**
- *	Frees the Password parameter along with its contents.
+ *  Frees the Password parameter along with its contents.
  */
 void freePassword( PasswordPtr password );
 

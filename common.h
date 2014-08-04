@@ -6,10 +6,12 @@ typedef int boolean;
 #define FALSE 0
 #define START_Y 6
 #define START_X 8
+#define EXIT_SUCCESS 0
+#define EXIT_ERROR 1
 
 struct point {
-	int y;
-	int x;
+  int y;
+  int x;
 };
 typedef struct point Point;
 
