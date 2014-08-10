@@ -22,8 +22,7 @@ PasswordPtr createHack() {
   newHack->content = malloc( sizeof(char) * (newHack->size + 1) );
   newHack->removed = FALSE;
 
-  char openbrackettype;
-  char closingbrackettype;
+  char openbrackettype, closingbrackettype;
 
   /* Pick type of bracket to use for hack. */
   switch (rand() % 4) { /* Pick number from 0 - 2 */
@@ -60,6 +59,10 @@ PasswordPtr createHack() {
 
 void setHackPosition( PasswordPtr hack, int newposition) {
   hack->position = newposition;
+}
+
+boolean sameBracketType( PasswordPtr hack_a, PasswordPtr hack_b ) {
+  return hack_a->content[0] == hack_b->content[0];
 }
 
 void freePassword( PasswordPtr password) {

@@ -33,6 +33,11 @@ PasswordPtr createHack();
 void setHackPosition( PasswordPtr hack, int position );
 
 /**
+*   Compares the bracket type of two different hacks. Returns true if they match.
+*/
+boolean sameBracketType( PasswordPtr hack_a, PasswordPtr hack_b );
+
+/**
  *  Frees the Password parameter along with its contents.
  */
 void freePassword( PasswordPtr password );

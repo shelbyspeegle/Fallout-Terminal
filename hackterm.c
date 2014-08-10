@@ -469,12 +469,20 @@ void genHacks() {
           break;
         }
 
+        if ( !validarrayposition ) {
+          break; /* We do not need to look any further. */
+        }
+
         /* Hack can be placed inside another hack. */
         if ( hackstart > hacks[j]->position && hackstart < hacks[j]->position + hacks[j]->size ) {
 
           /* As long as it is nested completely inside. */
           if ( hackend < hacks[j]->position + hacks[j]->size ) {
             validarrayposition = validarrayposition && TRUE;
+          } else if ( sameBracketType( hacks[i], hacks[j] ) ) { /* Or if hacks use the same closing bracket they may share that. */
+            if ( hackend <= hacks[j]->position + hacks[j]->size ) {
+              validarrayposition = validarrayposition && TRUE;
+            }
           } else {
             validarrayposition = FALSE;
             break;

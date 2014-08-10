@@ -52,18 +52,13 @@ For aspects of the game that I have not implemented yet, I have in place keys th
 #<a name="to-do"></a>To-Do
 Basic features: (Functionality that the actual game has)
 - Generate random words of n length.
-- Allow user to control experience from command line args.
-  * Option for difficulty settings.
-- Add how to install ncurses for requirements mac section.
 - Add lock screen transition where all lines on the screen move up and away.
 - Erase word in bottom right when a password is entered, like in-game.
 - Print UOS access menu options like in-game.
 - Make sure that the only matching brackets found on the same line are hacks.
 - Hacks with hacks inside of them should contain said hack in the content.
-- Passwords should be at least one space apart.
-  * Confirm this in game.
 - Passwords can exist inside hacks. These hacks can only be used once the password is removed as a dud.
-- Hacks can share a closing bracket of the same type.
+  * Research: What are the contents of a hack when this happens?
 - Research: Does the "Allowance replenished" hack return all allowances or just one?
 
 
@@ -75,6 +70,9 @@ WishList:
 - Allow user to skip terminal printing sequences.
 - Make RobCo UOS centered at all terminal resolutions.
 - Add tab-completion for UOS terminal.
+- Allow user to control experience from command line args.
+  * Option for difficulty settings.
+- Add how to install ncurses for requirements mac section.
 
 #<a name="dependencies"></a>Dependencies
 
