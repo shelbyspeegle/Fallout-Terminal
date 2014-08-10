@@ -532,6 +532,7 @@ void genPasswords() {  /* Fill the passwords array with Passwords */
       int j;
       for ( j=0; j<i; j++ ) {  /* Make sure current position is clear of every word generated */
         if ( positionfornewpassword < newpasswordpositions[j]+passwordLength
+        if ( positionfornewpassword < newpasswordpositions[j] + passwordLength + 1
             && positionfornewpassword+passwordLength > newpasswordpositions[j]) {
           notavalidposition = TRUE;
         }
