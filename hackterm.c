@@ -33,6 +33,7 @@ char *registers[] = {
 };
 char **messages;  /* Array of message strings. */
 char board[408];  /* Characters that make up the game board. */
+char **wordlist;
 int passwordLength;
 PasswordPtr *hacks;
 PasswordPtr *passwords;
@@ -45,19 +46,19 @@ int PRINT_SPEED = 18000;
 boolean debug = FALSE;
 boolean hardmode = FALSE;
 int passwordsleftonboard = NUM_PASSWORDS;
+FILE *fr;
 
 void setup();
 void printinputarea();
 void refreshboard();
 void pushmessage( const char *newMessage );
-boolean tryPassword();
-void removeDud( int a );
-void genPasswords();
-void genHacks();
-int insideWord();
-int insideHack();
+boolean trypassword();
+void genpasswords();
+void genhacks();
+int insideword();
+int insidehack();
 void highlight();
-char *stringatcursor();
+char * stringatcursor();
 void mvtermprint( int y, int x, char *string, int speed );
 int numberofcorrectchars( const char *checkword );
 void accesssystem();
@@ -67,6 +68,7 @@ void manualinputmode();
 void autoinputmode();
 int calculatenextcurx( int key_direction );
 void refreshpasswords();
+char * uniquerandomword();
 
 int main( int argc, char **argv ) {
 
@@ -88,6 +90,30 @@ int main( int argc, char **argv ) {
 
   passwordLength = 8;
 
+  wordlist = malloc( sizeof(char *) * 40 );
+
+  /* Word lengths between 4-15 */
+
+  char *filename = (char *) malloc( sizeof(char) * 8 );
+
+  sprintf( filename, "%i.txt", passwordLength);
+
+  fr = fopen(filename, "r");
+
+  char *line = NULL;
+  size_t linecapp = 100;
+
+  int m = 0;
+
+  for ( m=0; m<40; m++ ) {
+    getline( &line, &linecapp, fr );
+    wordlist[m] = malloc( sizeof(char) * passwordLength );
+    strncpy( wordlist[m], line, passwordLength );
+  }
+
+  free(line);
+  fclose(fr);
+
   /* Cut to the chase if debug mode is on. */
   if ( debug ) TYPE_SPEED = PRINT_SPEED = 0;
 
@@ -96,10 +122,7 @@ int main( int argc, char **argv ) {
   clear();
   mvtermprint( 3, 1, "WELCOME TO ROBCO INDUSTRIES (TM) TERMLINK", PRINT_SPEED);
 
-  if ( hardmode )
-    manualinputmode();
-  else
-    autoinputmode();
+  hardmode ? manualinputmode() : autoinputmode();
 
   setup();
 
@@ -157,7 +180,7 @@ int main( int argc, char **argv ) {
 
     switch (uInput) {
       case '\n' :  /* TODO: test Linux */
-        loggedin = tryPassword();
+        loggedin = trypassword();
         break;
       case KEY_UP :
         if (cur.y != 6)
@@ -168,7 +191,7 @@ int main( int argc, char **argv ) {
           cur.y++;
         break;
       case KEY_LEFT :
-        if ( insideWord() > -1 )                /* If the cursor is inside a word-                            */
+        if (insideword() > -1 )                /* If the cursor is inside a word-                            */
           cur.x = calculatenextcurx( uInput );  /*   figure out the next cur.x location.                      */
         else if (cur.x == 28)                   /* Else if the cursor is at the left bound of the right side- */
           cur.x = 19;                           /*   move the cursor to the right bound of the left side.     */
@@ -176,7 +199,7 @@ int main( int argc, char **argv ) {
           cur.x--;                              /*   move the cursor left.                                    */
         break;
       case KEY_RIGHT :
-        if ( insideWord() > -1 )                /* If the cursor is inside a word-                             */
+        if (insideword() > -1 )                /* If the cursor is inside a word-                             */
           cur.x = calculatenextcurx( uInput );  /*   figure out the next cur.x location.                       */
         else if (cur.x == 19)                   /* Else if the cursor is at the right bound of the left side-  */
           cur.x = 28;                           /*   move the cursor to the left bound of the right side.      */
@@ -229,9 +252,9 @@ void setup() {
     board[i] = genTrash();
   }
 
-  genPasswords();
+  genpasswords();
   refreshpasswords();
-  genHacks();
+  genhacks();
 
   /* TODO: clean up the code below, it is pretty messy */
   /* Print Registers /////////////////////////////////////////////////////////*/
@@ -319,9 +342,9 @@ void pushmessage( const char *newMessage ) {
   messages[0] = fullMsg;
 }
 
-boolean tryPassword() {
-  if (insideWord() >= 0) {  /* Test if the cursor on a Password. */
-    int k = insideWord();  /* Set k to the start of the word the cursor is in. */
+boolean trypassword() {
+  if (insideword() >= 0) {  /* Test if the cursor on a Password. */
+    int k = insideword();  /* Set k to the start of the word the cursor is in. */
     char *check = malloc(sizeof(char) * passwordLength);
     int j;
     for (j=0; j<passwordLength; j++) {
@@ -345,9 +368,9 @@ boolean tryPassword() {
       pushmessage( stringbuild );
       trysLeft--;
     }
-  } else if ( insideHack() >= 0) {  /* Test if the cursor on a Hack. */
+  } else if (insidehack() >= 0) {  /* Test if the cursor on a Hack. */
 
-    int a = insideHack();
+    int a = insidehack();
 
     if (passwordsleftonboard > 1) {  /* More than one Password on the board. */
 
@@ -417,12 +440,7 @@ boolean tryPassword() {
   return FALSE;
 }
 
-void removeDud(int a) { /* TODO: unimplemented. */
-  pushmessage(">Dud removed.");
-  pushmessage(">[*(>]");
-}
-
-void genHacks() {
+void genhacks() {
   /* TODO: Add this logic... If hack is placed inside another, set the contents of the hack we are inside to the hack that is inside. */
 
   int newhackpositions[NUM_HACKS];
@@ -521,7 +539,7 @@ void genHacks() {
   }
 }
 
-void genPasswords() {  /* Fill the passwords array with Passwords */
+void genpasswords() {  /* Fill the passwords array with Passwords */
 
   int max = 407-1-passwordLength;
   int min = 0;
@@ -550,17 +568,10 @@ void genPasswords() {  /* Fill the passwords array with Passwords */
     newpasswordpositions[i] = positionfornewpassword;
   }
 
-  /* TODO: randomly pick words from list */
-  passwords[0] = createPassword("DELICACY", newpasswordpositions[0]);
-  passwords[1] = createPassword("ABANDONS", newpasswordpositions[1]);
-  passwords[2] = createPassword("CASHBACK", newpasswordpositions[2]);
-  passwords[3] = createPassword("GREENERY", newpasswordpositions[3]);
-  passwords[4] = createPassword("TADPOLES", newpasswordpositions[4]);
-  passwords[5] = createPassword("KNITPICK", newpasswordpositions[5]);
-  passwords[6] = createPassword("GRUELING", newpasswordpositions[6]);
-  passwords[7] = createPassword("ASSESSOR", newpasswordpositions[7]);
-  passwords[8] = createPassword("CAUTIONS", newpasswordpositions[8]);
-  passwords[9] = createPassword("CANNIBIS", newpasswordpositions[9]);
+  int j;
+  for ( j=0; j<NUM_PASSWORDS; j++ ) {
+    passwords[j] = createPassword( uniquerandomword(), newpasswordpositions[j] );
+  }
 
   /* Pick one of the passwords on the board to be correct. */
   max = NUM_PASSWORDS-1;
@@ -569,7 +580,7 @@ void genPasswords() {  /* Fill the passwords array with Passwords */
   passwords[correct]->correct = TRUE;
 }
 
-int insideWord() {  /* if inside word, return array start position, else -1 */
+int insideword() {  /* if inside word, return array start position, else -1 */
   int a = yxtoarray(cur.y, cur.x);
 
   int i;
@@ -582,7 +593,7 @@ int insideWord() {  /* if inside word, return array start position, else -1 */
   return -1;
 }
 
-int insideHack() {  /* if inside word, return array start position, else -1 */
+int insidehack() {  /* if inside word, return array start position, else -1 */
   int a = yxtoarray(cur.y, cur.x);
 
   int i;
@@ -599,11 +610,11 @@ void highlight() {
 
   int a = yxtoarray(cur.y, cur.x);
 
-  if (insideWord() >= 0) {
+  if (insideword() >= 0) {
 
     /* TODO Do removed passwords highlight? */
 
-    a = insideWord();
+    a = insideword();
     int i;
     for (i = 0; i < NUM_PASSWORDS; i++) {  /* iterate through all words */
       if (a == passwords[i]->position ) {
@@ -617,8 +628,8 @@ void highlight() {
 
     attroff(A_STANDOUT);
     return;
-  } else if (insideHack() >= 0) {
-    a = insideHack();
+  } else if (insidehack() >= 0) {
+    a = insidehack();
 
     int i;
     for (i = 0; i < NUM_HACKS; i++) {  /* iterate through all words */
@@ -640,10 +651,10 @@ void highlight() {
 }
 
 char * stringatcursor() {  /* TODO: Try refactoring this. */
-  if (insideWord() >= 0) {  /* Cursor is in word. */
+  if (insideword() >= 0) {  /* Cursor is in word. */
     char *check = malloc(sizeof(char) * passwordLength);
 
-    int k = insideWord();
+    int k = insideword();
 
     int i;
     for ( i=0; i<passwordLength; i++ ) {
@@ -651,10 +662,10 @@ char * stringatcursor() {  /* TODO: Try refactoring this. */
     };
 
     return check;
-  } else if (insideHack() >= 0) {
+  } else if (insidehack() >= 0) {
 
     /* Find the hack that we are inside. */
-    int positionofhack = insideHack();
+    int positionofhack = insidehack();
 
     int i;
     for ( i=0; i< NUM_HACKS; i++) {
@@ -946,7 +957,7 @@ void autoinputmode() {
 }
 
 int calculatenextcurx( int key_direction ) {
-  int startOfWord = insideWord();
+  int startOfWord = insideword();
   int wordStartLine = startOfWord /12;
   int currentArrayPosition = yxtoarray( cur.y, cur.x );
   int returnVal;
@@ -978,14 +989,14 @@ int calculatenextcurx( int key_direction ) {
         if ( wordStartLine != (startOfWord + passwordLength)/12)
           returnVal = 28;
         else
-          returnVal = arraytopoint( insideWord() ).x + passwordLength;
+          returnVal = arraytopoint(insideword() ).x + passwordLength;
       } else {                                                          /* Cursor is not on same line as start of word. */
         returnVal = START_X + passwordLength - (12 - ( startOfWord - ( wordStartLine * 12 ) ) );
       }
     } else {                                                            /* Cursor is on the right side of the board. */
       if ( currentArrayPosition /12 == wordStartLine) {                 /* Cursor is on same line as start of word. */
         if ( wordStartLine == (startOfWord + passwordLength)/12)
-          returnVal = arraytopoint( insideWord() ).x + passwordLength;
+          returnVal = arraytopoint(insideword() ).x + passwordLength;
         else
           returnVal = cur.x;
       } else {                                                          /* Cursor is not on same line as start of word. */
@@ -1014,4 +1025,11 @@ void refreshpasswords() {
       currLocation++;
     }
   }
+}
+
+char * uniquerandomword() {
+  /* TODO: Make each work unique. */
+
+  /* Pick a word from 0 - 39 */
+  return wordlist[ rand() % 40 ];
 }

@@ -27,8 +27,6 @@ Run program hackterm:
 $ ./hackterm
 ```
 
-Program will stay running until attempts are gone, system is accessed, or quit key is pressed (see secret codes section below for all special keys). ^Z or ^C also work just as well!
-
 ##Requirements:
 - OS: Mac OSX or GNU/Linux
 - Terminal: minimum 80 x 24 with ascii characters
@@ -51,7 +49,6 @@ For aspects of the game that I have not implemented yet, I have in place keys th
 
 #<a name="to-do"></a>To-Do
 Basic features: (Functionality that the actual game has)
-- Generate random words of n length.
 - Add lock screen transition where all lines on the screen move up and away.
 - Erase word in bottom right when a password is entered, like in-game.
 - Print UOS access menu options like in-game.
