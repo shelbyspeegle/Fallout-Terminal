@@ -43,7 +43,7 @@ int correct;  /* The index position of the correct password in passLocations[] *
 Point cur;
 int TYPE_SPEED = 24000;  /* TODO: make these constants when program is finished */
 int PRINT_SPEED = 18000;
-boolean debug = FALSE;
+boolean debug;
 boolean hardmode = FALSE;
 int passwordsleftonboard = NUM_PASSWORDS;
 FILE *fr;
@@ -71,6 +71,8 @@ void refreshpasswords();
 char * uniquerandomword();
 
 int main( int argc, char **argv ) {
+
+  debug = (argc == 2 && argv[1][0] == 'd');
 
   srand( time(0) );  /* Seed rand with this so it is more random. */
 
@@ -487,29 +489,26 @@ void genhacks() {
           break;
         }
 
-        if ( !validarrayposition ) {
-          break; /* We do not need to look any further. */
+        /* Hacks cannot overlap. */
+        if ( hackstart < hacks[j]->position && hackend < hacks[j]->position + hacks[j]->size && hackend > hacks[j]->position ) {
+          validarrayposition = FALSE;
+          break;
         }
 
         /* Hack can be placed inside another hack. */
         if ( hackstart > hacks[j]->position && hackstart < hacks[j]->position + hacks[j]->size ) {
+          boolean useSameBracket = sameBracketType( hacks[i], hacks[j] );
+          boolean completelyInside = hackend < hacks[j]->position + hacks[j]->size;
+          boolean shareClosingBracket = hackend == hacks[j]->position + hacks[j]->size;
 
-          /* As long as it is nested completely inside. */
-          if ( hackend < hacks[j]->position + hacks[j]->size ) {
+          /* As long as it is nested completely inside and the hacks don't use the same brackets. */
+          /* Or if hacks use the same closing bracket they may share that. */
+          if ( (completelyInside && !useSameBracket) || (shareClosingBracket && useSameBracket) ) {
             validarrayposition = validarrayposition && TRUE;
-          } else if ( sameBracketType( hacks[i], hacks[j] ) ) { /* Or if hacks use the same closing bracket they may share that. */
-            if ( hackend <= hacks[j]->position + hacks[j]->size ) {
-              validarrayposition = validarrayposition && TRUE;
-            }
           } else {
             validarrayposition = FALSE;
             break;
           }
-        }
-
-        if ( hackstart < hacks[j]->position && hackend < hacks[j]->position + hacks[j]->size ) {
-          validarrayposition = FALSE;
-          break;
         }
       }
     }
@@ -530,11 +529,8 @@ void genhacks() {
     char *s = hacks[i]->content;
     char c;
     int j = 0;
-    while ( (c = s[j]) ) {
-      board[currLocation] = c;
-
-      j++;
-      currLocation++;
+    while ( (c = s[j++]) ) {
+      board[currLocation++] = c;
     }
   }
 }
@@ -858,7 +854,7 @@ void lockterminal() {
 void manualinputmode() {
   int curLine = 5;
 
-  mvprintw( curLine, 1, ">") ;
+  mvprintw( curLine, 1, ">");
 
   char str[80];  /* Nobody should write any command over 80 chars long! */
 

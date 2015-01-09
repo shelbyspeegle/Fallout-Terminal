@@ -52,15 +52,18 @@ Basic features: (Functionality that the actual game has)
 - Add lock screen transition where all lines on the screen move up and away.
 - Erase word in bottom right when a password is entered, like in-game.
 - Print UOS access menu options like in-game.
+- Make uniquerandomword() return unique words.
 - Make sure that the only matching brackets found on the same line are hacks.
 - Hacks with hacks inside of them should contain said hack in the content.
 - Passwords can exist inside hacks. These hacks can only be used once the password is removed as a dud.
   * Research: What are the contents of a hack when this happens?
 - Research: Does the "Allowance replenished" hack return all allowances or just one?
+- Make "!!! WARNING: LOCKOUT IMMINENT !!!" message blink when it appears.
 
 
 WishList:
 - Generate registers dynamically so every game is a little different.
+- Move word text files to subdirectory, or consolidate into one file.
 - Add capability of running a pseudo-terminal once game is complete.
   * Access some kind of fun files.
 - Allow user to type in password if desired.
