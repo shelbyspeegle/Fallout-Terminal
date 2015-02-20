@@ -5,14 +5,10 @@
  *      Author: shelbyspeegle
  */
 
-#define _BSD_SOURCE                            /* My Linux machine needs this */
-
 #include <ncurses.h>  /* ncurses.h includes stdio.h */
 #include <string.h>
 #include <unistd.h>
 #include <stdlib.h>
-#include <string.h>
-#include <ctype.h>
 #include <time.h>  /* for srand(time(NULL)) */
 
 #include "common.h"  /* Include common data types */
@@ -74,7 +70,7 @@ int main( int argc, char **argv ) {
 
   debug = (argc == 2 && argv[1][0] == 'd');
 
-  srand( time(0) );  /* Seed rand with this so it is more random. */
+  srand( (unsigned int)time(0) );  /* Seed rand with this so it is more random. */
 
   initscr();  /* Start ncurses mode. */
   getmaxyx( stdscr, rows, cols );  /* Capture the terminal window size. */
@@ -223,6 +219,7 @@ int main( int argc, char **argv ) {
         break;
       case 'q' :  /* Quit key */
         exituos();
+        exit( EXIT_SUCCESS );
       default:
         break;
     }
@@ -272,7 +269,7 @@ void setup() {
     int j;
     for (j = 0; j < 12; j++) {  /* iterate through each char in array */
       mvprintw(printY, printX++, "%c", board[ j + (12 * i) ]);
-      usleep(PRINT_SPEED/6);
+      usleep( (useconds_t) PRINT_SPEED/6 );
       refresh();
     }
 
@@ -292,7 +289,7 @@ void setup() {
     int j;
     for (j = 0; j < 12; j++) {  /* iterate through each char in array */
       mvprintw(printY, printX++, "%c", board[204 + j + (12 * i) ]);
-      usleep(PRINT_SPEED/6);
+      usleep( (useconds_t) PRINT_SPEED/6 );
       refresh();
     }
 
@@ -393,19 +390,19 @@ boolean trypassword() {
         int min = 0;
         int max = NUM_PASSWORDS-1;
 
-        int i = ( rand() % (max+1-min) ) + min;  /* Pick a random incorrect Password. */
+        int j = ( rand() % (max+1-min) ) + min;  /* Pick a random incorrect Password. */
 
-        if (!passwords[i]->correct && !passwords[i]->removed) {
+        if (!passwords[j]->correct && !passwords[j]->removed) {
 
           /* Copy over contents of incorrect password with dots. */
-          char *pointer = passwords[i]->content;
-          passwords[i]->removed = TRUE;
+          char *pointer = passwords[j]->content;
+          passwords[j]->removed = TRUE;
           passwordsleftonboard--;
 
-          int j = 0;
-          while (pointer[j] != '\0') {
-            pointer[j] = '.';
-            j++;
+          int k = 0;
+          while (pointer[k] != '\0') {
+            pointer[k] = '.';
+            k++;
           }
 
           flag = TRUE;
@@ -690,7 +687,7 @@ void mvtermprint( int y, int x, char *string, int speed ) {
   */
 
   int i;
-  int len = strlen(string);
+  int len = (int) strlen(string);
 
   if (speed == TYPE_SPEED && speed > 0) {
     mvprintw( y, x++, ">" );
@@ -706,7 +703,7 @@ void mvtermprint( int y, int x, char *string, int speed ) {
     for (i=0; i < len; i++) {
       mvprintw( y, x++, "%c", string[i]);
       refresh();
-      usleep(speed);
+      usleep( (useconds_t) speed );
     }
   }
 
@@ -751,7 +748,7 @@ void accesssystem() {
   int i;
   for (i=0; i < passwordLength; i++) {
     mvprintw(7, 3+i, "*");
-    usleep(TYPE_SPEED*3);
+    usleep( (useconds_t) TYPE_SPEED*3);
     refresh();
   }
   usleep(1000000);  /* TODO: get exact time */
@@ -779,16 +776,16 @@ void accesssystem() {
   /* Menu */
   while (1) {
     /* Print Menu */
-    int i;
-    for (i=0; i < num_options; i++) {
-      if (selection == i) {
+    int j;
+    for (j=0; j < num_options; j++) {
+      if (selection == j) {
         attron(A_STANDOUT);
-        mvprintw( 9+i, 5, "                                            ");
-        mvprintw( 9+i, 5, "> %s", menu[i]);
+        mvprintw( 9+j, 5, "                                            ");
+        mvprintw( 9+j, 5, "> %s", menu[j]);
         attroff(A_STANDOUT);
       } else {
-        mvprintw( 9+i, 5, "                                            ");
-        mvprintw(9+i, 5, "> %s", menu[i]);
+        mvprintw( 9+j, 5, "                                            ");
+        mvprintw(9+j, 5, "> %s", menu[j]);
       }
     }
 
@@ -817,6 +814,7 @@ void accesssystem() {
         break;
       case 'q' :  /* Quit key */
         exituos();
+        exit( EXIT_SUCCESS );
       default:
         break;
     }
@@ -828,7 +826,6 @@ void exituos() {
   free(messages);
 
   endwin();  /* End ncurses mode */
-  exit( EXIT_SUCCESS );
 }
 
 void lockterminal() {
@@ -842,9 +839,9 @@ void lockterminal() {
   int centerX = cols/2;
   int centerY = rows/2;
 
-  int len = strlen("TERMINAL LOCKED");
+  int len = (int) strlen("TERMINAL LOCKED");
   mvprintw(centerY-5, centerX-(len/2), "TERMINAL LOCKED");
-  len = strlen("PLEASE CONTACT AN ADMINISTRATOR");
+  len = (int) strlen("PLEASE CONTACT AN ADMINISTRATOR");
   mvprintw(centerY-3, centerX-(len/2), "PLEASE CONTACT AN ADMINISTRATOR");
 
   getch();
