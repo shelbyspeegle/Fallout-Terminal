@@ -19,13 +19,13 @@ char genTrash() {
 
 int arrayFromYX(int y, int x) {
   if ( y >= 6 && y <= 22 ) {
-    y-=6;  /* Convert y so y origin is 6. */
+    y -= START_Y;  /* Convert y so y origin is 6. */
 
     int temp = y*12;
 
     if ( x >= 8 && x <= 19 ) {
       /* Left half of board. */
-      x -= 8;  /* Convert x so x origin is 8. */
+      x -= START_X;  /* Convert x so x origin is 8. */
 
       return temp + (x % 12);
 
