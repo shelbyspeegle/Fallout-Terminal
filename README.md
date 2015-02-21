@@ -12,10 +12,6 @@
 
 A Fallout terminal emulator as seen in Fallout 3 and Fallout: New Vegas.
 
-I plan to flesh out this program in C, then write at least Ruby and C++ versions of it.
-
-A goal of mine is to make the finished code extremely clean and readable.
-
 ##Usage:
 Compile with Make from project root:
 ```
@@ -37,22 +33,19 @@ $ ./hackterm
 Use the arrow keys to navigate the board. Use enter to submit the highlighted word as a password.
 
 ##Secret codes:
-
-For aspects of the game that I have not implemented yet, I have in place keys that the user can press in order to achieve certain effects:
-
-| Key | Effect                                                  |
-| --- | ------------------------------------------------------- |
-|  q  | Quit application.                                       |
-|  -  | Subtracts one attempt.                                  |
-|  +  | Adds one attempt.                                       |
-|  a  | Grants access.                                          |
+| Key | Effect                  |
+| --- | ----------------------- |
+|  q  | Quit application.       |
+|  -  | Subtract one attempt.   |
+|  +  | Add one attempt.        |
+|  a  | Grant access.           |
 
 #<a name="to-do"></a>To-Do
 Basic features: (Functionality that the actual game has)
 - Add lock screen transition where all lines on the screen move up and away.
 - Erase word in bottom right when a password is entered, like in-game.
 - Print UOS access menu options like in-game.
-- Make uniquerandomword() return unique words.
+- Make uniqueRandomWord() return unique words.
 - Make sure that the only matching brackets found on the same line are hacks.
 - Hacks with hacks inside of them should contain said hack in the content.
 - Passwords can exist inside hacks. These hacks can only be used once the password is removed as a dud.
@@ -63,14 +56,12 @@ Basic features: (Functionality that the actual game has)
 
 WishList:
 - Generate registers dynamically so every game is a little different.
-- Add capability of running a pseudo-terminal once game is complete.
-  * Access some kind of fun files.
-- Allow user to type in password if desired.
+- Add access to vault entries once access is granted.
+- Allow user to type in passwords if desired.
 - Allow user to skip terminal printing sequences.
 - Add tab-completion for UOS terminal.
 - Allow user to control experience from command line args.
   * Option for difficulty settings.
-- Add how to install ncurses for requirements mac section.
 
 #<a name="dependencies"></a>Dependencies
 
