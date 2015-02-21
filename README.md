@@ -63,12 +63,10 @@ Basic features: (Functionality that the actual game has)
 
 WishList:
 - Generate registers dynamically so every game is a little different.
-- Move word text files to subdirectory, or consolidate into one file.
 - Add capability of running a pseudo-terminal once game is complete.
   * Access some kind of fun files.
 - Allow user to type in password if desired.
 - Allow user to skip terminal printing sequences.
-- Make RobCo UOS centered at all terminal resolutions.
 - Add tab-completion for UOS terminal.
 - Allow user to control experience from command line args.
   * Option for difficulty settings.

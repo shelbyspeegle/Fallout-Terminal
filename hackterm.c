@@ -34,15 +34,18 @@ int passwordLength;
 PasswordPtr *hacks;
 PasswordPtr *passwords;
 int rows, cols;
-int trysLeft = 4;
+int triesLeft = 4;
 int correct;  /* The index position of the correct password in passLocations[] */
 Point cur;
-int TYPE_SPEED = 24000;  /* TODO: make these constants when program is finished */
-int PRINT_SPEED = 18000;
+useconds_t TYPE_SPEED = 24000;
+useconds_t PRINT_SPEED = 18000;
+useconds_t TYPE_DELAY = 1000000;
 boolean debug;
-boolean hardmode = FALSE;
+boolean hardMode = FALSE;
 int passwordsLeftOnBoard = NUM_PASSWORDS;
 FILE *fr;
+int terminalStartX;
+int terminalStartY;
 
 void setup();
 void printInputArea();
@@ -65,10 +68,9 @@ int calculateNextCurX(int keyDirection);
 void refreshPasswords();
 char *uniqueRandomWord();
 
-void mvtermprint( int y, int x, char *string, int speed );
+void mvtermprint( int y, int x, char *string, useconds_t speed );
 
 int main( int argc, char **argv ) {
-
   debug = (argc == 2 && argv[1][0] == 'd');
 
   srand( (unsigned int)time(0) );  /* Seed rand with this so it is more random. */
@@ -87,24 +89,26 @@ int main( int argc, char **argv ) {
     return EXIT_ERROR;
   }
 
-  passwordLength = 8;
+  terminalStartX = cols/2 - 55/2;
+  terminalStartY = rows/2 - 24/2;
+
+  passwordLength = 9;
 
   wordList = malloc( sizeof(char *) * 40 );
 
   /* Word lengths between 4-15 */
 
-  char *fileName = (char *) malloc( sizeof(char) * 15 );
+  char *fileName = (char *) malloc( sizeof(char) * 16 );
   sprintf(fileName, "wordbank/%i.txt", passwordLength);
 
   fr = fopen(fileName, "r");
 
   char *line = NULL;
-  size_t lineCapp = 100;
+  size_t n = 0;
 
   int m = 0;
-
   for ( m=0; m<40; m++ ) {
-    getline( &line, &lineCapp, fr );
+    getline( &line, &n, fr );
     wordList[m] = malloc( sizeof(char) * passwordLength );
     strncpy( wordList[m], line, passwordLength );
   }
@@ -113,14 +117,18 @@ int main( int argc, char **argv ) {
   fclose(fr);
 
   /* Cut to the chase if debug mode is on. */
-  if ( debug ) TYPE_SPEED = PRINT_SPEED = 0;
+  if ( debug ) {
+    TYPE_SPEED = TYPE_SPEED/20;
+    PRINT_SPEED = PRINT_SPEED/20;
+    TYPE_DELAY = TYPE_DELAY/20;
+  }
 
   /* Start of display. */
-  mvtermprint( 1, 1, "SECURITY RESET...", PRINT_SPEED);
+  mvtermprint( terminalStartY + 1, terminalStartX + 1, "SECURITY RESET...", PRINT_SPEED );
   clear();
-  mvtermprint( 3, 1, "WELCOME TO ROBCO INDUSTRIES (TM) TERMLINK", PRINT_SPEED);
+  mvtermprint( terminalStartY + 3, terminalStartX + 1, "WELCOME TO ROBCO INDUSTRIES (TM) TERMLINK", PRINT_SPEED );
 
-  hardmode ? manualInputMode() : autoInputMode();
+  hardMode ? manualInputMode() : autoInputMode();
 
   setup();
 
@@ -129,27 +137,27 @@ int main( int argc, char **argv ) {
   while (1) {  /* Start the game. */
 
     /* Update the attempts left section. */
-    mvprintw( 4, 21, "        ");  /* Clear the tries. */
+    mvprintw( terminalStartY + 4, terminalStartX + 21, "        ");  /* Clear the tries. */
 
-    if (trysLeft == 1) {
+    if (triesLeft == 1) {
       attron(A_BLINK);  /* eh blinkin'! */
-      mvprintw(2, 1, "!!! WARNING: LOCKOUT IMMINENT !!!");
+      mvprintw( terminalStartY + 2, terminalStartX + 1, "!!! WARNING: LOCKOUT IMMINENT !!!" );
       attroff(A_BLINK);
     } else {
-      mvprintw(2, 1, "ENTER PASSWORD NOW               ");
+      mvprintw( terminalStartY + 2, terminalStartX + 1, "ENTER PASSWORD NOW               " );
     }
 
     /* Place the symbols for number of tries left. */
     attron(A_STANDOUT);
-    switch (trysLeft) {
+    switch (triesLeft) {
       case 4:
-        mvprintw( 4, 27, " ");  /* 4th */
+        mvprintw( terminalStartY + 4, terminalStartX + 27, " " );  /* 4th */
       case 3:
-        mvprintw( 4, 25, " ");  /* 3rd */
+        mvprintw( terminalStartY + 4, terminalStartX + 25, " " );  /* 3rd */
       case 2:
-        mvprintw( 4, 23, " ");  /* 2nd */
+        mvprintw( terminalStartY + 4, terminalStartX + 23, " " );  /* 2nd */
       case 1:  /* Lockout imminent. */
-        mvprintw( 4, 21, " ");  /* 1st */
+        mvprintw( terminalStartY + 4, terminalStartX + 21, " " );  /* 1st */
         attroff(A_STANDOUT);
         break;
       default:  /* Game over. */
@@ -157,11 +165,11 @@ int main( int argc, char **argv ) {
         lockTerminal();
     }
 
-    mvprintw(4, 1, "%i", trysLeft);
+    mvprintw( terminalStartY + 4, terminalStartX + 1, "%i", triesLeft );
 
     refreshBoard();
 
-    move(cur.y, cur.x);
+    move(terminalStartY + cur.y, terminalStartX + cur.x);
 
     highlight();
     refresh();
@@ -169,7 +177,7 @@ int main( int argc, char **argv ) {
     printInputArea();
 
     if (loggedIn) {
-      usleep(1000000*3);
+      usleep(TYPE_SPEED*3);
       accessSystem();
     }
 
@@ -205,11 +213,11 @@ int main( int argc, char **argv ) {
           cur.x++;                              /*   move the cursor right.                                    */
         break;
       case '-' :
-        trysLeft--;
+        triesLeft--;
         break;
       case '+' :
-        if (trysLeft < 4) {
-          trysLeft++;
+        if (triesLeft < 4) {
+          triesLeft++;
           pushMessage("Allowance");
           pushMessage("replenished.");
         }
@@ -231,7 +239,7 @@ void setup() {
   noecho();  /* Silence user input */
 
   /* Board Set-up ////////////////////////////////////////////////////////////*/
-  mvprintw( 22, 41, ">" );
+  mvprintw( terminalStartY + 22, terminalStartX + 41, ">" );
   refresh();
 
   /* Place cursor at starting position */
@@ -241,9 +249,9 @@ void setup() {
   messages = malloc( sizeof(char*) * MAX_MESSAGES);
   hacks = malloc( sizeof(char*) * NUM_HACKS);
   passwords = malloc( sizeof(PasswordPtr *) * NUM_PASSWORDS );
-  mvtermprint( 1, 1, "ROBCO INDUSTRIES (TM) TERMLINK PROTOCOL", PRINT_SPEED );
-  mvtermprint( 2, 1, "ENTER PASSWORD NOW", PRINT_SPEED );
-  mvtermprint( 4, 1, "4 ATTEMPT(S) LEFT : ", PRINT_SPEED );
+  mvtermprint( terminalStartY + 1, terminalStartX + 1, "ROBCO INDUSTRIES (TM) TERMLINK PROTOCOL", PRINT_SPEED );
+  mvtermprint( terminalStartY + 2, terminalStartX + 1, "ENTER PASSWORD NOW", PRINT_SPEED );
+  mvtermprint( terminalStartY + 4, terminalStartX + 1, "4 ATTEMPT(S) LEFT : ", PRINT_SPEED );
 
   /* Populate Board Array with Trash /////////////////////////////////////////*/
   int i;
@@ -262,14 +270,14 @@ void setup() {
 
   /* Print left half of game */
   for (i = 0; i < 17; i++) {
-    mvtermprint(printY, printX, registers[i], PRINT_SPEED/6 );  /* Print registers */
+    mvtermprint( terminalStartY + printY, terminalStartX + printX, registers[i], PRINT_SPEED/6 );  /* Print registers */
     printX+=7;
     refresh();
 
     int j;
     for (j = 0; j < 12; j++) {  /* iterate through each char in array */
-      mvprintw(printY, printX++, "%c", board[ j + (12 * i) ]);
-      usleep( (useconds_t) PRINT_SPEED/6 );
+      mvprintw( terminalStartY + printY, terminalStartX + printX++, "%c", board[ j + (12 * i) ] );
+      usleep( PRINT_SPEED/6 );
       refresh();
     }
 
@@ -282,14 +290,14 @@ void setup() {
 
   /* Print right half of game */
   for (i = 0; i < 17; i++) {
-    mvtermprint(printY, printX, registers[i+17], PRINT_SPEED/6 );  /* Print registers */
+    mvtermprint( terminalStartY + printY, terminalStartX + printX, registers[i+17], PRINT_SPEED/6 );  /* Print registers */
     printX+=7;
     refresh();
 
     int j;
     for (j = 0; j < 12; j++) {  /* iterate through each char in array */
-      mvprintw(printY, printX++, "%c", board[204 + j + (12 * i) ]);
-      usleep( (useconds_t) PRINT_SPEED/6 );
+      mvprintw( terminalStartY + printY, terminalStartX + printX++, "%c", board[204 + j + (12 * i) ] );
+      usleep( PRINT_SPEED/6 );
       refresh();
     }
 
@@ -301,19 +309,26 @@ void setup() {
 void printInputArea() {
   int i;
   for (i=0; i < MAX_MESSAGES; i++) {
-    if (messages[i])
-      mvprintw(20-i, 41, "%s", messages[i]);  /* Print messages that exist */
+    if (messages[i]) {
+      mvprintw(terminalStartY + 20 - i, terminalStartX + 41, "%s", messages[i] );  /* Print messages that exist */
+    }
   }
 
-  mvprintw( 22, 42, "              ");  /* Clear input line */
+  mvprintw( terminalStartY + 22, terminalStartX + 42, "              " );  /* Clear input line */
 
-  mvtermprint( 22, 42, stringAtCursor(), PRINT_SPEED );
+  mvtermprint( terminalStartY + 22, terminalStartX + 42, stringAtCursor(), PRINT_SPEED );
 }
 
 void refreshBoard() {
+  if ( debug ) {
+    mvaddch( terminalStartY - 1, terminalStartX - 1, ACS_ULCORNER );
+    mvaddch( terminalStartY - 1, terminalStartX + 55, ACS_URCORNER );
+    mvaddch( terminalStartY + 24, terminalStartX - 1, ACS_LLCORNER );
+    mvaddch( terminalStartY + 24, terminalStartX + 55, ACS_LRCORNER );
+  }
   int i;
   for (i = 0; i < 408; i++) {  /* iterate through each char in array */
-    mvprintw(arrayToPoint(i).y, arrayToPoint(i).x, "%c", board[i]);
+    mvprintw(terminalStartY + arrayToPoint(i).y, terminalStartX + arrayToPoint(i).x, "%c", board[i] );
   }
 }
 
@@ -365,7 +380,7 @@ boolean tryPassword() {
       char *stringBuild = malloc(sizeof(char) * MAX_MESSAGE_LENGTH);
       sprintf(stringBuild, "%i/%i correct.", i, passwordLength);
       pushMessage(stringBuild);
-      trysLeft--;
+      triesLeft--;
     }
   } else if (insideHack() >= 0) {  /* Test if the cursor on a Hack. */
 
@@ -430,10 +445,10 @@ boolean tryPassword() {
     pushMessage(stringAtCursor());
     pushMessage("Entry denied");
 
-    char *stringbuild = malloc(sizeof(char) * MAX_MESSAGE_LENGTH);
-    sprintf(stringbuild, "0/%i correct.", passwordLength);
-    pushMessage(stringbuild);
-    trysLeft--;
+    char *stringBuild = malloc(sizeof(char) * MAX_MESSAGE_LENGTH);
+    sprintf(stringBuild, "0/%i correct.", passwordLength);
+    pushMessage(stringBuild);
+    triesLeft--;
   }
 
   return FALSE;
@@ -612,7 +627,7 @@ void highlight() {
     for (i = 0; i < NUM_PASSWORDS; i++) {  /* iterate through all words */
       if (a == passwords[i]->position ) {
         for ( i=0; i<passwords[i]->size; i++) {
-          mvprintw(arrayToPoint(a).y, arrayToPoint(a).x, "%c", board[a]);
+          mvprintw( terminalStartY + arrayToPoint(a).y, terminalStartX + arrayToPoint(a).x, "%c", board[a] );
           a++;
         }
         break;
@@ -629,7 +644,7 @@ void highlight() {
       if (a == hacks[i]->position ) {
         int j;
         for ( j=0; j<hacks[i]->size; j++) {
-          mvprintw(arrayToPoint(a).y, arrayToPoint(a).x, "%c", board[a]);
+          mvprintw( terminalStartY + arrayToPoint(a).y, terminalStartX + arrayToPoint(a).x, "%c", board[a] );
           a++;
         }
       }
@@ -675,16 +690,7 @@ char *stringAtCursor() {  /* TODO: Try refactoring this. */
   return returner;
 }
 
-void mvtermprint( int y, int x, char *string, int speed ) {
-  /*
-      TODO: Debug - why does strlen return 14?
-      if (len == 14) {
-          mvprintw(0,0, "FAILURE");
-          getch();
-      }
-      mvprintw(0,0, "%i ", len);
-  */
-
+void mvtermprint( int y, int x, char *string, useconds_t speed ) {
   int i;
   int len = (int) strlen(string);
 
@@ -692,22 +698,22 @@ void mvtermprint( int y, int x, char *string, int speed ) {
     mvprintw( y, x++, ">" );
     refresh();
 
-    usleep(1000000);
+    usleep(TYPE_DELAY);
   }
 
   if (len == 1) {
-    mvprintw( y, x++, "%c", string[0]);
+    mvprintw( y, x++, "%c", string[0] );
     refresh();
   } else {
     for (i=0; i < len; i++) {
-      mvprintw( y, x++, "%c", string[i]);
+      mvprintw( y, x++, "%c", string[i] );
       refresh();
-      usleep( (useconds_t) speed );
+      usleep( speed );
     }
   }
 
   if (speed == TYPE_SPEED && speed > 0) {
-    usleep(1000000);
+    usleep(TYPE_DELAY);
   }
 }
 
@@ -737,32 +743,32 @@ void accessSystem() {
 
   clear();
 
-  mvtermprint( 1, 1, "WELCOME TO ROBCO INDUSTRIES (TM) TERMLINK", fastPrintSpeed);
-  mvtermprint( 3, 1, " LOGIN ADMIN", fastPrintSpeed);
-  mvtermprint( 5, 1, "ENTER PASSWORD NOW", fastPrintSpeed);
+  mvtermprint( terminalStartY + 1, terminalStartX + 1, "WELCOME TO ROBCO INDUSTRIES (TM) TERMLINK", fastPrintSpeed );
+  mvtermprint( terminalStartY + 3, terminalStartX + 1, " LOGIN ADMIN", fastPrintSpeed );
+  mvtermprint( terminalStartY + 5, terminalStartX + 1, "ENTER PASSWORD NOW", fastPrintSpeed );
 
-  mvprintw( 7, 1, ">");
+  mvprintw( terminalStartY + 7, terminalStartX + 1, ">" );
   refresh();
-  usleep(1000000);  /* TODO: get exact time */
+  usleep(TYPE_DELAY);  /* TODO: get exact time */
   int i;
   for (i=0; i < passwordLength; i++) {
-    mvprintw(7, 3+i, "*");
-    usleep( (useconds_t) TYPE_SPEED*3);
+    mvprintw( terminalStartY + 7, terminalStartX + 3+i, "*" );
+    usleep( TYPE_SPEED*3 );
     refresh();
   }
-  usleep(1000000);  /* TODO: get exact time */
+  usleep(TYPE_DELAY);  /* TODO: get exact time */
 
   clear();
 
-  mvtermprint( 1, 7, "ROBCO INDUSTRIES UNIFIED OPERATING SYSTEM", fastPrintSpeed);
-  mvtermprint( 2, 9, "COPYRIGHT 2075-2077 ROBCO INDUSTRIES", fastPrintSpeed);
-  mvtermprint( 3, 22, "-Server 1-", fastPrintSpeed);
+  mvtermprint( terminalStartY + 1, terminalStartX + 7, "ROBCO INDUSTRIES UNIFIED OPERATING SYSTEM", fastPrintSpeed );
+  mvtermprint( terminalStartY + 2, terminalStartX + 9, "COPYRIGHT 2075-2077 ROBCO INDUSTRIES", fastPrintSpeed );
+  mvtermprint( terminalStartY + 3, terminalStartX + 22, "-Server 1-", fastPrintSpeed );
 
   /* If Lock ///////////////////////////////////////////////////////////////*/
-  mvtermprint( 5, 9, "SoftLock Solutions, Inc", fastPrintSpeed);
-  mvtermprint( 6, 5, "\"Your Security is Our Security\"", fastPrintSpeed);
-  mvtermprint( 7, 5, ">\\ Welcome, USER", fastPrintSpeed);
-  mvtermprint( 8, 5, "_______________________________", fastPrintSpeed);
+  mvtermprint( terminalStartY + 5, terminalStartX + 9, "SoftLock Solutions, Inc", fastPrintSpeed );
+  mvtermprint( terminalStartY + 6, terminalStartX + 5, "\"Your Security is Our Security\"", fastPrintSpeed );
+  mvtermprint( terminalStartY + 7, terminalStartX + 5, ">\\ Welcome, USER", fastPrintSpeed );
+  mvtermprint( terminalStartY + 8, terminalStartX + 5, "_______________________________", fastPrintSpeed );
 
   int selection = 0;
 
@@ -779,29 +785,29 @@ void accessSystem() {
     for (j=0; j < numOptions; j++) {
       if (selection == j) {
         attron(A_STANDOUT);
-        mvprintw( 9+j, 5, "                                            ");
-        mvprintw( 9+j, 5, "> %s", menu[j]);
+        mvprintw( terminalStartY + 9+j, terminalStartX + 5, "                                            " );
+        mvprintw( terminalStartY + 9+j, terminalStartX + 5, "> %s", menu[j] );
         attroff(A_STANDOUT);
       } else {
-        mvprintw( 9+j, 5, "                                            ");
-        mvprintw(9+j, 5, "> %s", menu[j]);
+        mvprintw( terminalStartY + 9+j, terminalStartX + 5, "                                            " );
+        mvprintw( terminalStartY + 9+j, terminalStartX + 5, "> %s", menu[j] );
       }
     }
 
-    mvprintw( 22, 5, "                                        ");
-    mvprintw( 22, 5, "> ");
+    mvprintw( terminalStartY + 22, terminalStartX + 5, "                                        " );
+    mvprintw( terminalStartY + 22, terminalStartX + 5, "> " );
 
     int uInput = getch();  /* Get user input from keyboard (pause). */
     usleep(10);  /* Reduces cursor jump if arrows are held down. */
 
     switch (uInput) {
       case '\n' :           /* TODO: test Linux */
-        mvtermprint(22, 7, menu[selection], PRINT_SPEED );
+        mvtermprint( terminalStartY + 22, terminalStartX + 7, menu[selection], PRINT_SPEED );
         if (getch() == '\n') {
-          mvprintw( 22, 5, "                                        ");
-          mvprintw( 22, 5, "> ");
-          mvtermprint( 22, 7, "Exiting...", PRINT_SPEED);
-          usleep(1000000*3);
+          mvprintw( terminalStartY + 22, terminalStartX + 5, "                                        " );
+          mvprintw( terminalStartY + 22, terminalStartX + 5, "> " );
+          mvtermprint( terminalStartY + 22, terminalStartX + 7, "Exiting...", PRINT_SPEED );
+          usleep(TYPE_DELAY*3);
           exitUos();
         }
         break;
@@ -835,13 +841,13 @@ void lockTerminal() {
 
   erase();
 
-  int centerX = cols/2;
-  int centerY = rows/2;
+  int centerX = 55/2;
+  int centerY = 24/2;
 
   int len = (int) strlen("TERMINAL LOCKED");
-  mvprintw(centerY-5, centerX-(len/2), "TERMINAL LOCKED");
-  len = (int) strlen("PLEASE CONTACT AN ADMINISTRATOR");
-  mvprintw(centerY-3, centerX-(len/2), "PLEASE CONTACT AN ADMINISTRATOR");
+  mvprintw( terminalStartY + centerY-5, terminalStartX + centerX-(len/2), "TERMINAL LOCKED" );
+  len = (int) strlen("PLEASE CONTACT AN ADMINISTRATOR" );
+  mvprintw( terminalStartY + centerY-3, terminalStartX + centerX-(len/2), "PLEASE CONTACT AN ADMINISTRATOR" );
 
   getch();
   exitUos();
@@ -850,7 +856,7 @@ void lockTerminal() {
 void manualInputMode() {
   int currentLine = 5;
 
-  mvprintw(currentLine, 1, ">");
+  mvprintw( terminalStartY + currentLine, terminalStartX + 1, ">" );
 
   char str[80];  /* Nobody should write any command over 80 chars long! */
 
@@ -862,27 +868,27 @@ void manualInputMode() {
 
     if ( strcmp( str, "SET TERMINAL/INQUIRE" ) == 0 ) {
       currentLine += 2;
-      mvprintw(currentLine, 1, "RIT-V300" );
+      mvprintw( terminalStartY + currentLine, terminalStartX + 1, "RIT-V300" );
       currentLine += 2;
     } else if ( strcmp( str, "SET FILE/PROTECTION=OWNER:RWED ACCOUNTS.F" ) == 0) {
       currentLine++;
     } else if ( strcmp( str, "SET HALT RESTART/MAINT" ) == 0 ) {
       currentLine += 2;
-      mvtermprint( currentLine++, 1, "Initializing Robco Industries(TM) MF Boot Agent v2.3.0", PRINT_SPEED);
-      mvtermprint( currentLine++, 1, "RETROS BIOS", PRINT_SPEED);
-      mvtermprint( currentLine++, 1, "RBIOS-4.02.08.00 52EE5.E7.E8", PRINT_SPEED);
-      mvtermprint( currentLine++, 1, "Copyright 2201-2203 Robco Ind.", PRINT_SPEED);
-      mvtermprint( currentLine++, 1, "Uppermem: 64 KB", PRINT_SPEED);
-      mvtermprint( currentLine++, 1, "Root (5A8)", PRINT_SPEED);
-      mvtermprint(currentLine, 1, "Maintenance Mode", PRINT_SPEED);
+      mvtermprint( terminalStartY + currentLine++, terminalStartX + 1, "Initializing Robco Industries(TM) MF Boot Agent v2.3.0", PRINT_SPEED );
+      mvtermprint( terminalStartY + currentLine++, terminalStartX + 1, "RETROS BIOS", PRINT_SPEED );
+      mvtermprint( terminalStartY + currentLine++, terminalStartX + 1, "RBIOS-4.02.08.00 52EE5.E7.E8", PRINT_SPEED );
+      mvtermprint( terminalStartY + currentLine++, terminalStartX + 1, "Copyright 2201-2203 Robco Ind.", PRINT_SPEED );
+      mvtermprint( terminalStartY + currentLine++, terminalStartX + 1, "Uppermem: 64 KB", PRINT_SPEED );
+      mvtermprint( terminalStartY + currentLine++, terminalStartX + 1, "Root (5A8)", PRINT_SPEED );
+      mvtermprint( terminalStartY + currentLine, terminalStartX + 1, "Maintenance Mode", PRINT_SPEED );
       currentLine += 2;
     } else if ( strcmp( str, "RUN DEBUG/ACCOUNTS.F" ) == 0 ) {
       inStartup = FALSE;
     } else if ( strcmp( str, "EXIT" ) == 0 ) {
       currentLine += 2;
-      mvtermprint(currentLine, 1, "EXITING...", PRINT_SPEED );
+      mvtermprint( terminalStartY + currentLine, terminalStartX + 1, "EXITING...", PRINT_SPEED );
       refresh();
-      usleep(1000000);
+      usleep(TYPE_DELAY);
       exitUos();
     } else {
       currentLine += 2;
@@ -920,32 +926,32 @@ void manualInputMode() {
       builder[count++] = 'd';
       builder[count] = '\0';
 
-      mvprintw(currentLine, 1, "%s", builder );
+      mvprintw( terminalStartY + currentLine, terminalStartX + 1, "%s", builder );
       currentLine += 2;
     }
 
-    mvprintw(currentLine, 1, ">");
+    mvprintw( terminalStartY + currentLine, terminalStartX + 1, ">" );
   }
 }
 
 void autoInputMode() {
-  mvtermprint( 5, 1, "SET TERMINAL/INQUIRE", TYPE_SPEED);
+  mvtermprint( terminalStartY + 5, terminalStartX + 1, "SET TERMINAL/INQUIRE", TYPE_SPEED );
 
-  mvtermprint( 7, 1, "RIT-V300", PRINT_SPEED);
+  mvtermprint( terminalStartY + 7, terminalStartX + 1, "RIT-V300", PRINT_SPEED );
 
-  mvtermprint( 9, 1, "SET FILE/PROTECTION=OWNER:RWED ACCOUNTS.F", TYPE_SPEED);
+  mvtermprint( terminalStartY + 9, terminalStartX + 1, "SET FILE/PROTECTION=OWNER:RWED ACCOUNTS.F", TYPE_SPEED );
 
-  mvtermprint( 10, 1, "SET HALT RESTART/MAINT", TYPE_SPEED);
+  mvtermprint( terminalStartY + 10, terminalStartX + 1, "SET HALT RESTART/MAINT", TYPE_SPEED );
 
-  mvtermprint( 12, 1, "Initializing Robco Industries(TM) MF Boot Agent v2.3.0", PRINT_SPEED);
-  mvtermprint( 13, 1, "RETROS BIOS", PRINT_SPEED);
-  mvtermprint( 14, 1, "RBIOS-4.02.08.00 52EE5.E7.E8", PRINT_SPEED);
-  mvtermprint( 15, 1, "Copyright 2201-2203 Robco Ind.", PRINT_SPEED);
-  mvtermprint( 16, 1, "Uppermem: 64 KB", PRINT_SPEED);
-  mvtermprint( 17, 1, "Root (5A8)", PRINT_SPEED);
-  mvtermprint( 18, 1, "Maintenance Mode", PRINT_SPEED);
+  mvtermprint( terminalStartY + 12, terminalStartX + 1, "Initializing Robco Industries(TM) MF Boot Agent v2.3.0", PRINT_SPEED );
+  mvtermprint( terminalStartY + 13, terminalStartX + 1, "RETROS BIOS", PRINT_SPEED );
+  mvtermprint( terminalStartY + 14, terminalStartX + 1, "RBIOS-4.02.08.00 52EE5.E7.E8", PRINT_SPEED );
+  mvtermprint( terminalStartY + 15, terminalStartX + 1, "Copyright 2201-2203 Robco Ind.", PRINT_SPEED );
+  mvtermprint( terminalStartY + 16, terminalStartX + 1, "Uppermem: 64 KB", PRINT_SPEED );
+  mvtermprint( terminalStartY + 17, terminalStartX + 1, "Root (5A8)", PRINT_SPEED );
+  mvtermprint( terminalStartY + 18, terminalStartX + 1, "Maintenance Mode", PRINT_SPEED );
 
-  mvtermprint( 20, 1, "RUN DEBUG/ACCOUNTS.F", TYPE_SPEED);
+  mvtermprint( terminalStartY + 20, terminalStartX + 1, "RUN DEBUG/ACCOUNTS.F", TYPE_SPEED );
 }
 
 int calculateNextCurX(int keyDirection) {
