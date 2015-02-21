@@ -30,7 +30,7 @@ PasswordPtr createHack();
 /**
  *  Set the position of a hack.
  */
-void setHackPosition( PasswordPtr hack, int position );
+void setHackPosition( PasswordPtr hack, int newPosition);
 
 /**
 *   Compares the bracket type of two different hacks. Returns true if they match.

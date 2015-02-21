@@ -6,7 +6,7 @@
 #include "common.h"
 
 char genTrash();
-int yxtoarray( int y, int x );
-Point arraytopoint( int a );
+int arrayFromYX(int y, int x);
+Point arrayToPoint(int a);
 
 #endif /* utilities.h */

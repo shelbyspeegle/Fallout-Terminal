@@ -17,7 +17,7 @@ char genTrash() {
   return c;
 }
 
-int yxtoarray( int y, int x ) {
+int arrayFromYX(int y, int x) {
   if ( y >= 6 && y <= 22 ) {
     y-=6;  /* Convert y so y origin is 6. */
 
@@ -44,7 +44,7 @@ int yxtoarray( int y, int x ) {
   }
 }
 
-Point arraytopoint( int a ) {
+Point arrayToPoint(int a) {
   Point result;
 
   result.x = START_X + ( a%12 );

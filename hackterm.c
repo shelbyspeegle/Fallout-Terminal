@@ -29,7 +29,7 @@ char *registers[] = {
 };
 char **messages;  /* Array of message strings. */
 char board[408];  /* Characters that make up the game board. */
-char **wordlist;
+char **wordList;
 int passwordLength;
 PasswordPtr *hacks;
 PasswordPtr *passwords;
@@ -41,30 +41,31 @@ int TYPE_SPEED = 24000;  /* TODO: make these constants when program is finished 
 int PRINT_SPEED = 18000;
 boolean debug;
 boolean hardmode = FALSE;
-int passwordsleftonboard = NUM_PASSWORDS;
+int passwordsLeftOnBoard = NUM_PASSWORDS;
 FILE *fr;
 
 void setup();
-void printinputarea();
-void refreshboard();
-void pushmessage( const char *newMessage );
-boolean trypassword();
-void genpasswords();
-void genhacks();
-int insideword();
-int insidehack();
+void printInputArea();
+void refreshBoard();
+void pushMessage(const char *newMessage);
+boolean tryPassword();
+void genPasswords();
+void genHacks();
+int insideWord();
+int insideHack();
 void highlight();
-char * stringatcursor();
+char *stringAtCursor();
+int numberOfCorrectChars(const char *checkWord);
+void accessSystem();
+void exitUos();
+void lockTerminal();
+void manualInputMode();
+void autoInputMode();
+int calculateNextCurX(int keyDirection);
+void refreshPasswords();
+char *uniqueRandomWord();
+
 void mvtermprint( int y, int x, char *string, int speed );
-int numberofcorrectchars( const char *checkword );
-void accesssystem();
-void exituos();
-void lockterminal();
-void manualinputmode();
-void autoinputmode();
-int calculatenextcurx( int key_direction );
-void refreshpasswords();
-char * uniquerandomword();
 
 int main( int argc, char **argv ) {
 
@@ -88,25 +89,25 @@ int main( int argc, char **argv ) {
 
   passwordLength = 8;
 
-  wordlist = malloc( sizeof(char *) * 40 );
+  wordList = malloc( sizeof(char *) * 40 );
 
   /* Word lengths between 4-15 */
 
-  char *filename = (char *) malloc( sizeof(char) * 8 );
+  char *fileName = (char *) malloc( sizeof(char) * 8 );
 
-  sprintf( filename, "%i.txt", passwordLength);
+  sprintf(fileName, "%i.txt", passwordLength);
 
-  fr = fopen(filename, "r");
+  fr = fopen(fileName, "r");
 
   char *line = NULL;
-  size_t linecapp = 100;
+  size_t lineCapp = 100;
 
   int m = 0;
 
   for ( m=0; m<40; m++ ) {
-    getline( &line, &linecapp, fr );
-    wordlist[m] = malloc( sizeof(char) * passwordLength );
-    strncpy( wordlist[m], line, passwordLength );
+    getline( &line, &lineCapp, fr );
+    wordList[m] = malloc( sizeof(char) * passwordLength );
+    strncpy( wordList[m], line, passwordLength );
   }
 
   free(line);
@@ -120,11 +121,11 @@ int main( int argc, char **argv ) {
   clear();
   mvtermprint( 3, 1, "WELCOME TO ROBCO INDUSTRIES (TM) TERMLINK", PRINT_SPEED);
 
-  hardmode ? manualinputmode() : autoinputmode();
+  hardmode ? manualInputMode() : autoInputMode();
 
   setup();
 
-  boolean loggedin = FALSE;
+  boolean loggedIn = FALSE;
 
   while (1) {  /* Start the game. */
 
@@ -154,23 +155,23 @@ int main( int argc, char **argv ) {
         break;
       default:  /* Game over. */
         attroff(A_STANDOUT);
-        lockterminal();
+        lockTerminal();
     }
 
     mvprintw(4, 1, "%i", trysLeft);
 
-    refreshboard();
+    refreshBoard();
 
     move(cur.y, cur.x);
 
     highlight();
     refresh();
 
-    printinputarea();
+    printInputArea();
 
-    if (loggedin) {
+    if (loggedIn) {
       usleep(1000000*3);
-      accesssystem();
+      accessSystem();
     }
 
     int uInput = getch();  /* Get user input from keyboard (pause) */
@@ -178,7 +179,7 @@ int main( int argc, char **argv ) {
 
     switch (uInput) {
       case '\n' :  /* TODO: test Linux */
-        loggedin = trypassword();
+        loggedIn = tryPassword();
         break;
       case KEY_UP :
         if (cur.y != 6)
@@ -189,16 +190,16 @@ int main( int argc, char **argv ) {
           cur.y++;
         break;
       case KEY_LEFT :
-        if (insideword() > -1 )                /* If the cursor is inside a word-                            */
-          cur.x = calculatenextcurx( uInput );  /*   figure out the next cur.x location.                      */
+        if (insideWord() > -1 )                /* If the cursor is inside a word-                            */
+          cur.x = calculateNextCurX(uInput);  /*   figure out the next cur.x location.                      */
         else if (cur.x == 28)                   /* Else if the cursor is at the left bound of the right side- */
           cur.x = 19;                           /*   move the cursor to the right bound of the left side.     */
         else if (cur.x != 8)                    /* As long as the cursor is not at the far left of the board- */
           cur.x--;                              /*   move the cursor left.                                    */
         break;
       case KEY_RIGHT :
-        if (insideword() > -1 )                /* If the cursor is inside a word-                             */
-          cur.x = calculatenextcurx( uInput );  /*   figure out the next cur.x location.                       */
+        if (insideWord() > -1 )                /* If the cursor is inside a word-                             */
+          cur.x = calculateNextCurX(uInput);  /*   figure out the next cur.x location.                       */
         else if (cur.x == 19)                   /* Else if the cursor is at the right bound of the left side-  */
           cur.x = 28;                           /*   move the cursor to the left bound of the right side.      */
         else if (cur.x != 39)                   /* As long as the cursor is not at the far right of the board- */
@@ -210,15 +211,15 @@ int main( int argc, char **argv ) {
       case '+' :
         if (trysLeft < 4) {
           trysLeft++;
-          pushmessage("Allowance");
-          pushmessage("replenished.");
+          pushMessage("Allowance");
+          pushMessage("replenished.");
         }
         break;
       case 'a' :
-        loggedin = TRUE;
+        loggedIn = TRUE;
         break;
       case 'q' :  /* Quit key */
-        exituos();
+        exitUos();
         exit( EXIT_SUCCESS );
       default:
         break;
@@ -251,9 +252,9 @@ void setup() {
     board[i] = genTrash();
   }
 
-  genpasswords();
-  refreshpasswords();
-  genhacks();
+  genPasswords();
+  refreshPasswords();
+  genHacks();
 
   /* TODO: clean up the code below, it is pretty messy */
   /* Print Registers /////////////////////////////////////////////////////////*/
@@ -298,7 +299,7 @@ void setup() {
   }
 }
 
-void printinputarea() {
+void printInputArea() {
   int i;
   for (i=0; i < MAX_MESSAGES; i++) {
     if (messages[i])
@@ -307,17 +308,17 @@ void printinputarea() {
 
   mvprintw( 22, 42, "              ");  /* Clear input line */
 
-  mvtermprint( 22, 42, stringatcursor(), PRINT_SPEED );
+  mvtermprint( 22, 42, stringAtCursor(), PRINT_SPEED );
 }
 
-void refreshboard() {
+void refreshBoard() {
   int i;
   for (i = 0; i < 408; i++) {  /* iterate through each char in array */
-    mvprintw(arraytopoint(i).y, arraytopoint(i).x, "%c", board[i]);
+    mvprintw(arrayToPoint(i).y, arrayToPoint(i).x, "%c", board[i]);
   }
 }
 
-void pushmessage( const char *newMessage ) {
+void pushMessage(const char *newMessage) {
   char *fullMsg = malloc(sizeof(char) * MAX_MESSAGE_LENGTH + 1);
 
   /* Start the message off with a '>' */
@@ -341,52 +342,52 @@ void pushmessage( const char *newMessage ) {
   messages[0] = fullMsg;
 }
 
-boolean trypassword() {
-  if (insideword() >= 0) {  /* Test if the cursor on a Password. */
-    int k = insideword();  /* Set k to the start of the word the cursor is in. */
+boolean tryPassword() {
+  if (insideWord() >= 0) {  /* Test if the cursor on a Password. */
+    int k = insideWord();  /* Set k to the start of the word the cursor is in. */
     char *check = malloc(sizeof(char) * passwordLength);
     int j;
     for (j=0; j<passwordLength; j++) {
       check[j] = board[k++];
     };
 
-    pushmessage( stringatcursor() );
+    pushMessage(stringAtCursor());
 
-    int i = numberofcorrectchars(check);
+    int i = numberOfCorrectChars(check);
     if (i == passwordLength) {
-      pushmessage( "Exact match!" );
-      pushmessage( "Please wait" );
-      pushmessage( "while system" );
-      pushmessage( "is accessed." );
+      pushMessage("Exact match!");
+      pushMessage("Please wait");
+      pushMessage("while system");
+      pushMessage("is accessed.");
 
       return TRUE;
     } else {
-      pushmessage( "Entry denied" );
-      char *stringbuild = malloc(sizeof(char) * MAX_MESSAGE_LENGTH);
-      sprintf(stringbuild, "%i/%i correct.", i, passwordLength);
-      pushmessage( stringbuild );
+      pushMessage("Entry denied");
+      char *stringBuild = malloc(sizeof(char) * MAX_MESSAGE_LENGTH);
+      sprintf(stringBuild, "%i/%i correct.", i, passwordLength);
+      pushMessage(stringBuild);
       trysLeft--;
     }
-  } else if (insidehack() >= 0) {  /* Test if the cursor on a Hack. */
+  } else if (insideHack() >= 0) {  /* Test if the cursor on a Hack. */
 
-    int a = insidehack();
+    int a = insideHack();
 
-    if (passwordsleftonboard > 1) {  /* More than one Password on the board. */
+    if (passwordsLeftOnBoard > 1) {  /* More than one Password on the board. */
 
       int i;
       for (i = 0; i < NUM_HACKS; i++) {  /* Iterate through all words. */
         if (a == hacks[i]->position ) {
-          pushmessage( hacks[i]->content );
+          pushMessage(hacks[i]->content);
           hacks[i]->position = -1;  /* Make this hack unusable. */
         }
       }
 
-      pushmessage("Dud removed.");
+      pushMessage("Dud removed.");
 
       boolean flag = FALSE;
 
       /* TODO maybe try a do-while here. */
-      while ( !flag && passwordsleftonboard > 1 ) {  /* Search for incorrect password to remove as a dud. */
+      while ( !flag && passwordsLeftOnBoard > 1 ) {  /* Search for incorrect password to remove as a dud. */
         int min = 0;
         int max = NUM_PASSWORDS-1;
 
@@ -397,7 +398,7 @@ boolean trypassword() {
           /* Copy over contents of incorrect password with dots. */
           char *pointer = passwords[j]->content;
           passwords[j]->removed = TRUE;
-          passwordsleftonboard--;
+          passwordsLeftOnBoard--;
 
           int k = 0;
           while (pointer[k] != '\0') {
@@ -409,7 +410,7 @@ boolean trypassword() {
         }
       }
 
-      refreshpasswords();
+      refreshPasswords();
 
       /* TODO provide logic for allowance replenishing */
 
@@ -420,60 +421,60 @@ boolean trypassword() {
       int i;
       for (i = 0; i < NUM_HACKS; i++) { /* iterate through all words */
         if (a == hacks[i]->position ) {
-          pushmessage( hacks[i]->content );
+          pushMessage(hacks[i]->content);
         }
       }
 
-      pushmessage("Entry denied");
+      pushMessage("Entry denied");
     }
   } else { /* The cursor is on Trash. */
-    pushmessage( stringatcursor() );
-    pushmessage( "Entry denied" );
+    pushMessage(stringAtCursor());
+    pushMessage("Entry denied");
 
     char *stringbuild = malloc(sizeof(char) * MAX_MESSAGE_LENGTH);
     sprintf(stringbuild, "0/%i correct.", passwordLength);
-    pushmessage( stringbuild );
+    pushMessage(stringbuild);
     trysLeft--;
   }
 
   return FALSE;
 }
 
-void genhacks() {
+void genHacks() {
   /* TODO: Add this logic... If hack is placed inside another, set the contents of the hack we are inside to the hack that is inside. */
 
-  int newhackpositions[NUM_HACKS];
-  int hackrow, hackrowposition, hackstart, hackend, passwordstart, passwordend;
+  int newHackPositions[NUM_HACKS];
+  int hackRow, hackRowPosition, hackStart, hackEnd, passwordStart, passwordEnd;
 
   int i;
   for ( i=0; i<NUM_HACKS; i++ ) {
 
     hacks[i] = createHack();
 
-    boolean validarrayposition = FALSE;
+    boolean validArrayPosition = FALSE;
 
-    while ( !validarrayposition ) {
+    while ( !validArrayPosition) {
 
-      validarrayposition = TRUE; /* TODO: fix... TOO HACKY! */
+      validArrayPosition = TRUE; /* TODO: fix... TOO HACKY! */
 
       /* Pick a row from 0 - 33 */
-      hackrow = rand() % 34;
+      hackRow = rand() % 34;
 
       /* Pick a spot in the row so that the hack remains on a single line. */
-      hackrowposition = rand() % ( 12  - hacks[i]->size ) ;
+      hackRowPosition = rand() % ( 12  - hacks[i]->size ) ;
 
-      hackstart = ( hackrow*12 ) + hackrowposition;
-      hackend = hackstart + hacks[i]->size;
+      hackStart = ( hackRow *12 ) + hackRowPosition;
+      hackEnd = hackStart + hacks[i]->size;
 
       int j;
       /* Make sure the hack does not collide with any passwords. */
       for ( j=0; j<NUM_PASSWORDS; j++ ) {
-        passwordstart = passwords[j]->position;
-        passwordend = passwordstart + passwords[j]->size;
+        passwordStart = passwords[j]->position;
+        passwordEnd = passwordStart + passwords[j]->size;
 
-        validarrayposition = validarrayposition && ( hackend < passwordstart || hackstart > passwordend );
+        validArrayPosition = validArrayPosition && ( hackEnd < passwordStart || hackStart > passwordEnd);
 
-        if ( !validarrayposition ) {
+        if ( !validArrayPosition) {
           break; /* We do not need to look any further. */
         }
       }
@@ -481,29 +482,29 @@ void genhacks() {
       /* If hack collides with other hack, make sure that it is inside. */
       for ( j=0; j<i; j++ ) {
         /* Position is not valid if our hack starts at the same spot as another. */
-        if ( hackstart == hacks[j]->position ) {
-          validarrayposition = FALSE;
+        if ( hackStart == hacks[j]->position ) {
+          validArrayPosition = FALSE;
           break;
         }
 
         /* Hacks cannot overlap. */
-        if ( hackstart < hacks[j]->position && hackend < hacks[j]->position + hacks[j]->size && hackend > hacks[j]->position ) {
-          validarrayposition = FALSE;
+        if ( hackStart < hacks[j]->position && hackEnd < hacks[j]->position + hacks[j]->size && hackEnd > hacks[j]->position ) {
+          validArrayPosition = FALSE;
           break;
         }
 
         /* Hack can be placed inside another hack. */
-        if ( hackstart > hacks[j]->position && hackstart < hacks[j]->position + hacks[j]->size ) {
+        if ( hackStart > hacks[j]->position && hackStart < hacks[j]->position + hacks[j]->size ) {
           boolean useSameBracket = sameBracketType( hacks[i], hacks[j] );
-          boolean completelyInside = hackend < hacks[j]->position + hacks[j]->size;
-          boolean shareClosingBracket = hackend == hacks[j]->position + hacks[j]->size;
+          boolean completelyInside = hackEnd < hacks[j]->position + hacks[j]->size;
+          boolean shareClosingBracket = hackEnd == hacks[j]->position + hacks[j]->size;
 
           /* As long as it is nested completely inside and the hacks don't use the same brackets. */
           /* Or if hacks use the same closing bracket they may share that. */
           if ( (completelyInside && !useSameBracket) || (shareClosingBracket && useSameBracket) ) {
-            validarrayposition = validarrayposition && TRUE;
+            validArrayPosition = validArrayPosition && TRUE;
           } else {
-            validarrayposition = FALSE;
+            validArrayPosition = FALSE;
             break;
           }
         }
@@ -511,12 +512,12 @@ void genhacks() {
     }
 
     /* Safe spot for hack successfully found! */
-    newhackpositions[i] = hackstart;
+    newHackPositions[i] = hackStart;
   }
 
   /* Set the locations of the newly created hacks. */
   for ( i=0; i<NUM_HACKS; i++ ) {
-    setHackPosition( hacks[i], newhackpositions[i] );
+    setHackPosition( hacks[i], newHackPositions[i] );
   }
 
   int currLocation = 0;
@@ -532,38 +533,38 @@ void genhacks() {
   }
 }
 
-void genpasswords() {  /* Fill the passwords array with Passwords */
+void genPasswords() {  /* Fill the passwords array with Passwords */
 
   int max = 407-1-passwordLength;
   int min = 0;
-  int newpasswordpositions[NUM_PASSWORDS];
+  int newPasswordPositions[NUM_PASSWORDS];
 
   int i;
   for ( i=0; i<NUM_PASSWORDS; i++ ) {
-    boolean notavalidposition = TRUE;
-    int positionfornewpassword;
-    while ( notavalidposition ) {
-      positionfornewpassword = ( rand() % (max+1-min) ) + min;  /* Pick a spot on the board */
+    boolean notValidPosition = TRUE;
+    int positionForNewPassword;
+    while (notValidPosition) {
+      positionForNewPassword = ( rand() % (max+1-min) ) + min;  /* Pick a spot on the board */
 
       /* TODO: This is hacky. Setting flag to FALSE until something below trips it to TRUE */
-      notavalidposition = FALSE;
+      notValidPosition = FALSE;
 
       int j;
       for ( j=0; j<i; j++ ) {  /* Make sure current position is clear of every word generated */
-        if ( positionfornewpassword < newpasswordpositions[j] + passwordLength + 1
-            && positionfornewpassword+passwordLength > newpasswordpositions[j]) {
-          notavalidposition = TRUE;
+        if ( positionForNewPassword < newPasswordPositions[j] + passwordLength + 1
+            && positionForNewPassword +passwordLength > newPasswordPositions[j]) {
+          notValidPosition = TRUE;
         }
       }
     }
 
-    /* Place password at positionfornewpassword */
-    newpasswordpositions[i] = positionfornewpassword;
+    /* Place password at positionForNewPassword */
+    newPasswordPositions[i] = positionForNewPassword;
   }
 
   int j;
   for ( j=0; j<NUM_PASSWORDS; j++ ) {
-    passwords[j] = createPassword( uniquerandomword(), newpasswordpositions[j] );
+    passwords[j] = createPassword(uniqueRandomWord(), newPasswordPositions[j] );
   }
 
   /* Pick one of the passwords on the board to be correct. */
@@ -573,8 +574,8 @@ void genpasswords() {  /* Fill the passwords array with Passwords */
   passwords[correct]->correct = TRUE;
 }
 
-int insideword() {  /* if inside word, return array start position, else -1 */
-  int a = yxtoarray(cur.y, cur.x);
+int insideWord() {  /* if inside word, return array start position, else -1 */
+  int a = arrayFromYX(cur.y, cur.x);
 
   int i;
   for (i = 0; i < NUM_PASSWORDS; i++) {  /* iterate through all words */
@@ -586,8 +587,8 @@ int insideword() {  /* if inside word, return array start position, else -1 */
   return -1;
 }
 
-int insidehack() {  /* if inside word, return array start position, else -1 */
-  int a = yxtoarray(cur.y, cur.x);
+int insideHack() {  /* if inside word, return array start position, else -1 */
+  int a = arrayFromYX(cur.y, cur.x);
 
   int i;
   for (i = 0; i < NUM_HACKS; i++) {  /* iterate through all words */
@@ -601,18 +602,18 @@ int insidehack() {  /* if inside word, return array start position, else -1 */
 void highlight() {
   attron(A_STANDOUT);
 
-  int a = yxtoarray(cur.y, cur.x);
+  int a = arrayFromYX(cur.y, cur.x);
 
-  if (insideword() >= 0) {
+  if (insideWord() >= 0) {
 
     /* TODO Do removed passwords highlight? */
 
-    a = insideword();
+    a = insideWord();
     int i;
     for (i = 0; i < NUM_PASSWORDS; i++) {  /* iterate through all words */
       if (a == passwords[i]->position ) {
         for ( i=0; i<passwords[i]->size; i++) {
-          mvprintw( arraytopoint(a).y, arraytopoint(a).x, "%c", board[a]);
+          mvprintw(arrayToPoint(a).y, arrayToPoint(a).x, "%c", board[a]);
           a++;
         }
         break;
@@ -621,15 +622,15 @@ void highlight() {
 
     attroff(A_STANDOUT);
     return;
-  } else if (insidehack() >= 0) {
-    a = insidehack();
+  } else if (insideHack() >= 0) {
+    a = insideHack();
 
     int i;
     for (i = 0; i < NUM_HACKS; i++) {  /* iterate through all words */
       if (a == hacks[i]->position ) {
         int j;
         for ( j=0; j<hacks[i]->size; j++) {
-          mvprintw( arraytopoint(a).y, arraytopoint(a).x, "%c", board[a]);
+          mvprintw(arrayToPoint(a).y, arrayToPoint(a).x, "%c", board[a]);
           a++;
         }
       }
@@ -643,11 +644,11 @@ void highlight() {
   attroff(A_STANDOUT);
 }
 
-char * stringatcursor() {  /* TODO: Try refactoring this. */
-  if (insideword() >= 0) {  /* Cursor is in word. */
+char *stringAtCursor() {  /* TODO: Try refactoring this. */
+  if (insideWord() >= 0) {  /* Cursor is in word. */
     char *check = malloc(sizeof(char) * passwordLength);
 
-    int k = insideword();
+    int k = insideWord();
 
     int i;
     for ( i=0; i<passwordLength; i++ ) {
@@ -655,14 +656,14 @@ char * stringatcursor() {  /* TODO: Try refactoring this. */
     };
 
     return check;
-  } else if (insidehack() >= 0) {
+  } else if (insideHack() >= 0) {
 
     /* Find the hack that we are inside. */
-    int positionofhack = insidehack();
+    int hackPosition = insideHack();
 
     int i;
     for ( i=0; i< NUM_HACKS; i++) {
-      if (hacks[i]->position == positionofhack) {
+      if (hacks[i]->position == hackPosition) {
         return hacks[i]->content;
       }
     }
@@ -670,13 +671,12 @@ char * stringatcursor() {  /* TODO: Try refactoring this. */
 
   /* Cursor is on a single char. */
   char *returner = malloc(sizeof(char) * 2);
-  returner[0] = board[yxtoarray(cur.y, cur.x)];
+  returner[0] = board[arrayFromYX(cur.y, cur.x)];
   returner[1] = '\0';
   return returner;
 }
 
 void mvtermprint( int y, int x, char *string, int speed ) {
-
   /*
       TODO: Debug - why does strlen return 14?
       if (len == 14) {
@@ -712,12 +712,12 @@ void mvtermprint( int y, int x, char *string, int speed ) {
   }
 }
 
-int numberofcorrectchars( const char *checkword ) {
-  if (strlen(checkword) != passwordLength) {
+int numberOfCorrectChars(const char *checkWord) {
+  if (strlen(checkWord) != passwordLength) {
     /* TODO: properly free memory and end the program */
     endwin();
-    fprintf(stderr, "ERROR: numberofcorrectchars called on string of length %i when passwords are of length %i.\n",
-        (int) strlen(checkword), passwordLength);
+    fprintf(stderr, "ERROR: numberOfCorrectChars called on string of length %i when passwords are of length %i.\n",
+        (int) strlen(checkWord), passwordLength);
     exit(1);
   }
 
@@ -725,7 +725,7 @@ int numberofcorrectchars( const char *checkword ) {
 
   int i;
   for (i=0; i < passwordLength; i++) {
-    if (passwords[correct]->content[i] == checkword[i]) {
+    if (passwords[correct]->content[i] == checkWord[i]) {
       count++;
     }
   }
@@ -733,14 +733,14 @@ int numberofcorrectchars( const char *checkword ) {
   return count;
 }
 
-void accesssystem() {
-  int print_speed_fast = PRINT_SPEED/3;
+void accessSystem() {
+  int fastPrintSpeed = PRINT_SPEED/3;
 
   clear();
 
-  mvtermprint( 1, 1, "WELCOME TO ROBCO INDUSTRIES (TM) TERMLINK", print_speed_fast );
-  mvtermprint( 3, 1, " LOGIN ADMIN", print_speed_fast );
-  mvtermprint( 5, 1, "ENTER PASSWORD NOW", print_speed_fast );
+  mvtermprint( 1, 1, "WELCOME TO ROBCO INDUSTRIES (TM) TERMLINK", fastPrintSpeed);
+  mvtermprint( 3, 1, " LOGIN ADMIN", fastPrintSpeed);
+  mvtermprint( 5, 1, "ENTER PASSWORD NOW", fastPrintSpeed);
 
   mvprintw( 7, 1, ">");
   refresh();
@@ -755,19 +755,19 @@ void accesssystem() {
 
   clear();
 
-  mvtermprint( 1, 7, "ROBCO INDUSTRIES UNIFIED OPERATING SYSTEM", print_speed_fast );
-  mvtermprint( 2, 9, "COPYRIGHT 2075-2077 ROBCO INDUSTRIES", print_speed_fast );
-  mvtermprint( 3, 22, "-Server 1-", print_speed_fast );
+  mvtermprint( 1, 7, "ROBCO INDUSTRIES UNIFIED OPERATING SYSTEM", fastPrintSpeed);
+  mvtermprint( 2, 9, "COPYRIGHT 2075-2077 ROBCO INDUSTRIES", fastPrintSpeed);
+  mvtermprint( 3, 22, "-Server 1-", fastPrintSpeed);
 
   /* If Lock ///////////////////////////////////////////////////////////////*/
-  mvtermprint( 5, 9, "SoftLock Solutions, Inc", print_speed_fast );
-  mvtermprint( 6, 5, "\"Your Security is Our Security\"", print_speed_fast );
-  mvtermprint( 7, 5, ">\\ Welcome, USER", print_speed_fast );
-  mvtermprint( 8, 5, "_______________________________", print_speed_fast );
+  mvtermprint( 5, 9, "SoftLock Solutions, Inc", fastPrintSpeed);
+  mvtermprint( 6, 5, "\"Your Security is Our Security\"", fastPrintSpeed);
+  mvtermprint( 7, 5, ">\\ Welcome, USER", fastPrintSpeed);
+  mvtermprint( 8, 5, "_______________________________", fastPrintSpeed);
 
   int selection = 0;
 
-  int num_options = 2;
+  int numOptions = 2;
   char *menu[] = {
       "Disengage Lock",
       "Exit"
@@ -777,7 +777,7 @@ void accesssystem() {
   while (1) {
     /* Print Menu */
     int j;
-    for (j=0; j < num_options; j++) {
+    for (j=0; j < numOptions; j++) {
       if (selection == j) {
         attron(A_STANDOUT);
         mvprintw( 9+j, 5, "                                            ");
@@ -803,17 +803,17 @@ void accesssystem() {
           mvprintw( 22, 5, "> ");
           mvtermprint( 22, 7, "Exiting...", PRINT_SPEED);
           usleep(1000000*3);
-          exituos();
+          exitUos();
         }
         break;
       case KEY_UP :
         selection == 0 ? selection = 1 : selection--;
         break;
       case KEY_DOWN :
-        selection == num_options - 1 ? selection = 0 : selection++;
+        selection == numOptions - 1 ? selection = 0 : selection++;
         break;
       case 'q' :  /* Quit key */
-        exituos();
+        exitUos();
         exit( EXIT_SUCCESS );
       default:
         break;
@@ -821,14 +821,14 @@ void accesssystem() {
   }
 }
 
-void exituos() {
+void exitUos() {
   free(hacks);
   free(messages);
 
   endwin();  /* End ncurses mode */
 }
 
-void lockterminal() {
+void lockTerminal() {
   /* TODO: Find a way to move the entire screen up, line by line until no
            lines are visible. */
 
@@ -845,48 +845,48 @@ void lockterminal() {
   mvprintw(centerY-3, centerX-(len/2), "PLEASE CONTACT AN ADMINISTRATOR");
 
   getch();
-  exituos();
+  exitUos();
 }
 
-void manualinputmode() {
-  int curLine = 5;
+void manualInputMode() {
+  int currentLine = 5;
 
-  mvprintw( curLine, 1, ">");
+  mvprintw(currentLine, 1, ">");
 
   char str[80];  /* Nobody should write any command over 80 chars long! */
 
-  boolean instartup = TRUE;
+  boolean inStartup = TRUE;
 
-  while ( instartup ) {
+  while (inStartup) {
 
     getstr( str );
 
     if ( strcmp( str, "SET TERMINAL/INQUIRE" ) == 0 ) {
-      curLine += 2;
-      mvprintw( curLine, 1, "RIT-V300" );
-      curLine += 2;
+      currentLine += 2;
+      mvprintw(currentLine, 1, "RIT-V300" );
+      currentLine += 2;
     } else if ( strcmp( str, "SET FILE/PROTECTION=OWNER:RWED ACCOUNTS.F" ) == 0) {
-      curLine++;
+      currentLine++;
     } else if ( strcmp( str, "SET HALT RESTART/MAINT" ) == 0 ) {
-      curLine += 2;
-      mvtermprint( curLine++, 1, "Initializing Robco Industries(TM) MF Boot Agent v2.3.0", PRINT_SPEED);
-      mvtermprint( curLine++, 1, "RETROS BIOS", PRINT_SPEED);
-      mvtermprint( curLine++, 1, "RBIOS-4.02.08.00 52EE5.E7.E8", PRINT_SPEED);
-      mvtermprint( curLine++, 1, "Copyright 2201-2203 Robco Ind.", PRINT_SPEED);
-      mvtermprint( curLine++, 1, "Uppermem: 64 KB", PRINT_SPEED);
-      mvtermprint( curLine++, 1, "Root (5A8)", PRINT_SPEED);
-      mvtermprint( curLine, 1, "Maintenance Mode", PRINT_SPEED);
-      curLine += 2;
+      currentLine += 2;
+      mvtermprint( currentLine++, 1, "Initializing Robco Industries(TM) MF Boot Agent v2.3.0", PRINT_SPEED);
+      mvtermprint( currentLine++, 1, "RETROS BIOS", PRINT_SPEED);
+      mvtermprint( currentLine++, 1, "RBIOS-4.02.08.00 52EE5.E7.E8", PRINT_SPEED);
+      mvtermprint( currentLine++, 1, "Copyright 2201-2203 Robco Ind.", PRINT_SPEED);
+      mvtermprint( currentLine++, 1, "Uppermem: 64 KB", PRINT_SPEED);
+      mvtermprint( currentLine++, 1, "Root (5A8)", PRINT_SPEED);
+      mvtermprint(currentLine, 1, "Maintenance Mode", PRINT_SPEED);
+      currentLine += 2;
     } else if ( strcmp( str, "RUN DEBUG/ACCOUNTS.F" ) == 0 ) {
-      instartup = FALSE;
+      inStartup = FALSE;
     } else if ( strcmp( str, "EXIT" ) == 0 ) {
-      curLine += 2;
-      mvtermprint( curLine, 1, "EXITING...", PRINT_SPEED );
+      currentLine += 2;
+      mvtermprint(currentLine, 1, "EXITING...", PRINT_SPEED );
       refresh();
       usleep(1000000);
-      exituos();
+      exitUos();
     } else {
-      curLine += 2;
+      currentLine += 2;
 
       char builder[80];
       builder[0] = 'U';
@@ -921,15 +921,15 @@ void manualinputmode() {
       builder[count++] = 'd';
       builder[count] = '\0';
 
-      mvprintw( curLine, 1, "%s", builder );
-      curLine += 2;
+      mvprintw(currentLine, 1, "%s", builder );
+      currentLine += 2;
     }
 
-    mvprintw(curLine, 1, ">");
+    mvprintw(currentLine, 1, ">");
   }
 }
 
-void autoinputmode() {
+void autoInputMode() {
   mvtermprint( 5, 1, "SET TERMINAL/INQUIRE", TYPE_SPEED);
 
   mvtermprint( 7, 1, "RIT-V300", PRINT_SPEED);
@@ -949,18 +949,18 @@ void autoinputmode() {
   mvtermprint( 20, 1, "RUN DEBUG/ACCOUNTS.F", TYPE_SPEED);
 }
 
-int calculatenextcurx( int key_direction ) {
-  int startOfWord = insideword();
+int calculateNextCurX(int keyDirection) {
+  int startOfWord = insideWord();
   int wordStartLine = startOfWord /12;
-  int currentArrayPosition = yxtoarray( cur.y, cur.x );
+  int currentArrayPosition = arrayFromYX(cur.y, cur.x);
   int returnVal;
 
   /* TODO: Refactor the code below. There must be a better way! */
-  if ( key_direction == KEY_LEFT ) {                      /* Left key was pressed. */
+  if ( keyDirection == KEY_LEFT ) {                      /* Left key was pressed. */
     if ( currentArrayPosition <= 203 ) {                  /*   Cursor is on the left side of the board. */
       if ( currentArrayPosition /12 == wordStartLine) {   /*     Cursor is on same line as start of word. */
         if ( startOfWord - 1 >= wordStartLine * 12)
-          returnVal = arraytopoint(startOfWord).x - 1;
+          returnVal = arrayToPoint(startOfWord).x - 1;
         else
           returnVal = cur.x;
       } else {                                            /*     Cursor is not on same line as start of word. */
@@ -968,10 +968,10 @@ int calculatenextcurx( int key_direction ) {
       }
     } else {                                              /*    Cursor is on the right side of the board. */
       if ( currentArrayPosition /12 == wordStartLine) {   /*      Cursor is on same line as start of word. */
-        if ( arraytopoint(startOfWord).x == 28)
+        if (arrayToPoint(startOfWord).x == 28)
           returnVal = 19;
         else
-          returnVal = arraytopoint(startOfWord).x - 1;
+          returnVal = arrayToPoint(startOfWord).x - 1;
       } else {                                            /*      Cursor is not on same line as start of word. */
         returnVal = 19;
       }
@@ -982,14 +982,14 @@ int calculatenextcurx( int key_direction ) {
         if ( wordStartLine != (startOfWord + passwordLength)/12)
           returnVal = 28;
         else
-          returnVal = arraytopoint(insideword() ).x + passwordLength;
+          returnVal = arrayToPoint(insideWord()).x + passwordLength;
       } else {                                                          /* Cursor is not on same line as start of word. */
         returnVal = START_X + passwordLength - (12 - ( startOfWord - ( wordStartLine * 12 ) ) );
       }
     } else {                                                            /* Cursor is on the right side of the board. */
       if ( currentArrayPosition /12 == wordStartLine) {                 /* Cursor is on same line as start of word. */
         if ( wordStartLine == (startOfWord + passwordLength)/12)
-          returnVal = arraytopoint(insideword() ).x + passwordLength;
+          returnVal = arrayToPoint(insideWord()).x + passwordLength;
         else
           returnVal = cur.x;
       } else {                                                          /* Cursor is not on same line as start of word. */
@@ -1001,7 +1001,7 @@ int calculatenextcurx( int key_direction ) {
   return returnVal;
 }
 
-void refreshpasswords() {
+void refreshPasswords() {
   /* At each passLocation copy a password. */
   int currLocation = 0;
   int i;
@@ -1020,9 +1020,9 @@ void refreshpasswords() {
   }
 }
 
-char * uniquerandomword() {
+char *uniqueRandomWord() {
   /* TODO: Make each work unique. */
 
   /* Pick a word from 0 - 39 */
-  return wordlist[ rand() % 40 ];
+  return wordList[ rand() % 40 ];
 }

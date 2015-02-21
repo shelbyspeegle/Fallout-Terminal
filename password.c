@@ -3,7 +3,7 @@
 
 PasswordPtr createPassword( const char *str, int position) {
   PasswordPtr newPassword = (PasswordPtr) malloc( sizeof( Password ) );
-  newPassword->size = strlen(str);
+  newPassword->size = (int) strlen(str);
   newPassword->position = position;
   newPassword->correct = FALSE;
   newPassword->content = malloc( sizeof(char) * (newPassword->size + 1) );
@@ -22,26 +22,26 @@ PasswordPtr createHack() {
   newHack->content = malloc( sizeof(char) * (newHack->size + 1) );
   newHack->removed = FALSE;
 
-  char openbrackettype, closingbrackettype;
+  char openBracketType, closingBracketType;
 
   /* Pick type of bracket to use for hack. */
   switch (rand() % 4) { /* Pick number from 0 - 2 */
     case 0:
-      openbrackettype = '(';
-      closingbrackettype = ')';
+      openBracketType = '(';
+      closingBracketType = ')';
       break;
     case 1:
-      openbrackettype = '[';
-      closingbrackettype = ']';
+      openBracketType = '[';
+      closingBracketType = ']';
       break;
-    case 2:
-      openbrackettype = '{';
-      closingbrackettype = '}';
+    default: /* Case 2 */
+      openBracketType = '{';
+      closingBracketType = '}';
       break;
   }
 
-  newHack->content[0] = openbrackettype;
-  newHack->content[newHack->size-1] = closingbrackettype;
+  newHack->content[0] = openBracketType;
+  newHack->content[newHack->size-1] = closingBracketType;
 
   /* Fill hack contents with trash (except brackets of type above) */
   int i;
@@ -49,7 +49,7 @@ PasswordPtr createHack() {
     char trash;
     do {
       trash = genTrash();
-    } while ( trash == openbrackettype || trash == closingbrackettype );
+    } while ( trash == openBracketType || trash == closingBracketType);
 
     newHack->content[i] = trash;
   }
@@ -57,8 +57,8 @@ PasswordPtr createHack() {
   return newHack;
 }
 
-void setHackPosition( PasswordPtr hack, int newposition) {
-  hack->position = newposition;
+void setHackPosition( PasswordPtr hack, int newPosition) {
+  hack->position = newPosition;
 }
 
 boolean sameBracketType( PasswordPtr hack_a, PasswordPtr hack_b ) {
