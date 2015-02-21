@@ -93,9 +93,8 @@ int main( int argc, char **argv ) {
 
   /* Word lengths between 4-15 */
 
-  char *fileName = (char *) malloc( sizeof(char) * 8 );
-
-  sprintf(fileName, "%i.txt", passwordLength);
+  char *fileName = (char *) malloc( sizeof(char) * 15 );
+  sprintf(fileName, "wordbank/%i.txt", passwordLength);
 
   fr = fopen(fileName, "r");
 
