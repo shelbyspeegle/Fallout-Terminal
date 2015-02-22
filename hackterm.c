@@ -733,7 +733,7 @@ int numberOfCorrectChars(const char *checkWord) {
 }
 
 void accessSystem() {
-  int fastPrintSpeed = PRINT_SPEED/3;
+  useconds_t fastPrintSpeed = PRINT_SPEED/3;
 
   clear();
 
