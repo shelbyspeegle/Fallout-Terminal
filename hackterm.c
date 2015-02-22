@@ -149,20 +149,14 @@ int main( int argc, char **argv ) {
 
     /* Place the symbols for number of tries left. */
     attron(A_STANDOUT);
-    switch (triesLeft) {
-      case 4:
-        mvprintw( terminalStartY + 4, terminalStartX + 27, " " );  /* 4th */
-      case 3:
-        mvprintw( terminalStartY + 4, terminalStartX + 25, " " );  /* 3rd */
-      case 2:
-        mvprintw( terminalStartY + 4, terminalStartX + 23, " " );  /* 2nd */
-      case 1:  /* Lockout imminent. */
-        mvprintw( terminalStartY + 4, terminalStartX + 21, " " );  /* 1st */
-        attroff(A_STANDOUT);
-        break;
-      default:  /* Game over. */
-        attroff(A_STANDOUT);
-        lockTerminal();
+    int i;
+    for ( i = 0; i < triesLeft; i++ ) {
+      mvprintw( terminalStartY + 4, terminalStartX + 21 + i*2, " " );
+    }
+    attroff(A_STANDOUT);
+    if ( triesLeft == 0 ) {
+      lockTerminal();
+      exit( EXIT_SUCCESS );
     }
 
     mvprintw( terminalStartY + 4, terminalStartX + 1, "%i", triesLeft );
