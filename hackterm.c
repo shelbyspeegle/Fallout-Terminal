@@ -19,6 +19,8 @@
 #define MAX_MESSAGE_LENGTH 13
 #define NUM_PASSWORDS 10  /* TODO: This should be a variable */
 #define NUM_HACKS 7  /* TODO: Find the real number */
+#define BOARD_WIDTH 55
+#define BOARD_HEIGHT 24
 
 char *registers[] = {
     "0xF964", "0xF970", "0xF97C", "0xF988", "0xF994", "0xF9A0", "0xF9AC",
@@ -79,18 +81,16 @@ int main( int argc, char **argv ) {
   getmaxyx( stdscr, rows, cols );  /* Capture the terminal window size. */
   keypad( stdscr, TRUE );  /* Converts arrow key input to usable chars. */
 
-  if (rows < 24 || cols < 55) {  /* Check to see if window is big enough. */
-    /*TODO: Make terminal centered at all resolutions */
-
+  if (rows < BOARD_HEIGHT || cols < BOARD_WIDTH) {  /* Check to see if window is big enough. */
     endwin();
     printf("ERROR: Terminal window is too small,\n");
-    printf("       minimum size of 24x55 to run.\n");
+    printf("       minimum size of %ix%i to run.\n", BOARD_WIDTH , BOARD_HEIGHT);
 
     return EXIT_ERROR;
   }
 
-  terminalStartX = cols/2 - 55/2;
-  terminalStartY = rows/2 - 24/2;
+  terminalStartX = cols/2 - BOARD_WIDTH/2;
+  terminalStartY = rows/2 - BOARD_HEIGHT/2;
 
   passwordLength = 9;
 
@@ -322,9 +322,9 @@ void printInputArea() {
 void refreshBoard() {
   if ( debug ) {
     mvaddch( terminalStartY - 1, terminalStartX - 1, ACS_ULCORNER );
-    mvaddch( terminalStartY - 1, terminalStartX + 55, ACS_URCORNER );
-    mvaddch( terminalStartY + 24, terminalStartX - 1, ACS_LLCORNER );
-    mvaddch( terminalStartY + 24, terminalStartX + 55, ACS_LRCORNER );
+    mvaddch( terminalStartY - 1, terminalStartX + BOARD_WIDTH, ACS_URCORNER );
+    mvaddch( terminalStartY + BOARD_HEIGHT, terminalStartX - 1, ACS_LLCORNER );
+    mvaddch( terminalStartY + BOARD_HEIGHT, terminalStartX + BOARD_WIDTH, ACS_LRCORNER );
   }
   int i;
   for (i = 0; i < 408; i++) {  /* iterate through each char in array */
@@ -841,8 +841,8 @@ void lockTerminal() {
 
   erase();
 
-  int centerX = 55/2;
-  int centerY = 24/2;
+  int centerX = BOARD_WIDTH/2;
+  int centerY = BOARD_HEIGHT/2;
 
   int len = (int) strlen("TERMINAL LOCKED");
   mvprintw( terminalStartY + centerY-5, terminalStartX + centerX-(len/2), "TERMINAL LOCKED" );
