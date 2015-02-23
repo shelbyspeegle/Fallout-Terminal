@@ -852,32 +852,57 @@ void lockTerminal() {
 void manualInputMode() {
   int currentLine = 5;
 
+  curs_set(1);
+
   mvprintw( terminalStartY + currentLine, terminalStartX + 1, ">" );
 
   char str[80];  /* Nobody should write any command over 80 chars long! */
 
   boolean inStartup = TRUE;
 
+  /* TODO: Include buffer containing all lines entered, so that we can move the old messages up when the screen becomes full. */
+
   while (inStartup) {
 
     getstr( str );
 
-    if ( strcmp( str, "SET TERMINAL/INQUIRE" ) == 0 ) {
-      currentLine += 2;
-      mvprintw( terminalStartY + currentLine, terminalStartX + 1, "RIT-V300" );
-      currentLine += 2;
-    } else if ( strcmp( str, "SET FILE/PROTECTION=OWNER:RWED ACCOUNTS.F" ) == 0) {
-      currentLine++;
-    } else if ( strcmp( str, "SET HALT RESTART/MAINT" ) == 0 ) {
-      currentLine += 2;
-      mvtermprint( terminalStartY + currentLine++, terminalStartX + 1, "Initializing Robco Industries(TM) MF Boot Agent v2.3.0", PRINT_SPEED );
-      mvtermprint( terminalStartY + currentLine++, terminalStartX + 1, "RETROS BIOS", PRINT_SPEED );
-      mvtermprint( terminalStartY + currentLine++, terminalStartX + 1, "RBIOS-4.02.08.00 52EE5.E7.E8", PRINT_SPEED );
-      mvtermprint( terminalStartY + currentLine++, terminalStartX + 1, "Copyright 2201-2203 Robco Ind.", PRINT_SPEED );
-      mvtermprint( terminalStartY + currentLine++, terminalStartX + 1, "Uppermem: 64 KB", PRINT_SPEED );
-      mvtermprint( terminalStartY + currentLine++, terminalStartX + 1, "Root (5A8)", PRINT_SPEED );
-      mvtermprint( terminalStartY + currentLine, terminalStartX + 1, "Maintenance Mode", PRINT_SPEED );
-      currentLine += 2;
+    if ( strcmp( str, "HELP" ) == 0 ) {
+        currentLine += 2;
+        mvtermprint( terminalStartY + currentLine++, terminalStartX + 1,  "ROBCO INDUSTRIES (TM) TERMLINK", PRINT_SPEED );
+        mvtermprint( terminalStartY + currentLine, terminalStartX + 1, "RBIOS-4.02.08.00 52EE5.E7.E8", PRINT_SPEED );
+        currentLine += 2;
+        mvtermprint( terminalStartY + currentLine++, terminalStartX + 1 + 3, "SET", PRINT_SPEED );
+        mvtermprint( terminalStartY + currentLine++, terminalStartX + 1 + 3, "RUN", PRINT_SPEED );
+        mvtermprint( terminalStartY + currentLine, terminalStartX + 1 + 3, "EXIT", PRINT_SPEED );
+        currentLine += 2;
+    } else if ( strstr(str, "SET") != NULL ) {
+      if ( strcmp( str, "SET TERMINAL/INQUIRE" ) == 0 ) {
+        currentLine += 2;
+        mvprintw(terminalStartY + currentLine, terminalStartX + 1, "RIT-V300");
+        currentLine += 2;
+      } else if ( strcmp( str, "SET FILE/PROTECTION=OWNER:RWED ACCOUNTS.F" ) == 0) {
+        currentLine++;
+      } else if ( strcmp( str, "SET HALT RESTART/MAINT" ) == 0 ) {
+        currentLine += 2;
+        mvtermprint( terminalStartY + currentLine++, terminalStartX + 1, "Initializing Robco Industries(TM) MF Boot Agent v2.3.0", PRINT_SPEED );
+        mvtermprint( terminalStartY + currentLine++, terminalStartX + 1, "RETROS BIOS", PRINT_SPEED );
+        mvtermprint( terminalStartY + currentLine++, terminalStartX + 1, "RBIOS-4.02.08.00 52EE5.E7.E8", PRINT_SPEED );
+        mvtermprint( terminalStartY + currentLine++, terminalStartX + 1, "Copyright 2201-2203 Robco Ind.", PRINT_SPEED );
+        mvtermprint( terminalStartY + currentLine++, terminalStartX + 1, "Uppermem: 64 KB", PRINT_SPEED );
+        mvtermprint( terminalStartY + currentLine++, terminalStartX + 1, "Root (5A8)", PRINT_SPEED );
+        mvtermprint( terminalStartY + currentLine, terminalStartX + 1, "Maintenance Mode", PRINT_SPEED );
+        currentLine += 2;
+      } else if ( strcmp( str, "SET --HELP" ) == 0 ) {
+        currentLine += 2;
+        mvtermprint(terminalStartY + currentLine++, terminalStartX + 1 + 3, "TERMINAL/INQUIRE", PRINT_SPEED );
+        mvtermprint(terminalStartY + currentLine++, terminalStartX + 1 + 3, "FILE/PROTECTION=OWNER:RWED ACCOUNTS.F", PRINT_SPEED );
+        mvtermprint(terminalStartY + currentLine, terminalStartX + 1 + 3, "HALT RESTART/MAINT", PRINT_SPEED );
+        currentLine += 2;
+      } else {
+        currentLine++;
+        mvprintw(terminalStartY + currentLine, terminalStartX + 1, "USAGE: SET <COMMAND> [--HELP]");
+        currentLine += 2;
+      }
     } else if ( strcmp( str, "RUN DEBUG/ACCOUNTS.F" ) == 0 ) {
       inStartup = FALSE;
     } else if ( strcmp( str, "EXIT" ) == 0 ) {
@@ -886,48 +911,47 @@ void manualInputMode() {
       refresh();
       usleep(TYPE_DELAY);
       exitUos();
+      exit( EXIT_SUCCESS );
     } else {
       currentLine += 2;
 
       char builder[80];
-      builder[0] = 'U';
-      builder[1] = 'O';
-      builder[2] = 'S';
-      builder[3] = ':';
-      builder[4] = ' ';
+      int count = 0;
 
-      int count = 5;
-
-      while ( (builder[count] = str[count-5]) ) {
+      while ( (builder[count] = str[count]) ) {
         count++;
       }
       builder[count++] = ':';
       builder[count++] = ' ';
-      builder[count++] = 'c';
-      builder[count++] = 'o';
-      builder[count++] = 'm';
-      builder[count++] = 'm';
-      builder[count++] = 'a';
-      builder[count++] = 'n';
-      builder[count++] = 'd';
+      builder[count++] = 'C';
+      builder[count++] = 'O';
+      builder[count++] = 'M';
+      builder[count++] = 'M';
+      builder[count++] = 'A';
+      builder[count++] = 'N';
+      builder[count++] = 'D';
       builder[count++] = ' ';
-      builder[count++] = 'n';
-      builder[count++] = 'o';
-      builder[count++] = 't';
+      builder[count++] = 'N';
+      builder[count++] = 'O';
+      builder[count++] = 'T';
       builder[count++] = ' ';
-      builder[count++] = 'f';
-      builder[count++] = 'o';
-      builder[count++] = 'u';
-      builder[count++] = 'n';
-      builder[count++] = 'd';
+      builder[count++] = 'F';
+      builder[count++] = 'O';
+      builder[count++] = 'U';
+      builder[count++] = 'N';
+      builder[count++] = 'D';
       builder[count] = '\0';
 
       mvprintw( terminalStartY + currentLine, terminalStartX + 1, "%s", builder );
+      currentLine += 2;
+      mvprintw( terminalStartY + currentLine, terminalStartX + 1, "TYPE 'HELP' FOR LISTING OF AVAILABLE OPTIONS." );
       currentLine += 2;
     }
 
     mvprintw( terminalStartY + currentLine, terminalStartX + 1, ">" );
   }
+
+  curs_set(0);
 }
 
 void autoInputMode() {
