@@ -5,6 +5,8 @@
  *      Author: shelbyspeegle
  */
 
+#define _GNU_SOURCE
+
 #include <ncurses.h>  /* ncurses.h includes stdio.h */
 #include <string.h>
 #include <unistd.h>
@@ -103,17 +105,17 @@ int main( int argc, char **argv ) {
 
   fr = fopen(fileName, "r");
 
-  char *line = NULL;
-  size_t n = 0;
+  int n = passwordLength + 2;
+  char line[n];
 
   int m = 0;
   for ( m=0; m<40; m++ ) {
-    getline( &line, &n, fr );
+    fgets( line, n, fr );
     wordList[m] = malloc( sizeof(char) * passwordLength );
     strncpy( wordList[m], line, passwordLength );
   }
 
-  free(line);
+  free(fileName);
   fclose(fr);
 
   /* Cut to the chase if debug mode is on. */
@@ -179,7 +181,7 @@ int main( int argc, char **argv ) {
     usleep(10);  /* Reduces cursor jump if arrows are held down */
 
     switch (uInput) {
-      case '\n' :  /* TODO: test Linux */
+      case '\n' :
         loggedIn = tryPassword();
         break;
       case KEY_UP :
