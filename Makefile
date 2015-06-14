@@ -1,16 +1,15 @@
-
 CC=gcc
-CFLAGS=-Wall -g -O -std=c89
+CFLAGS=-Wall -g -O
 LFLAGS=-lncurses
-PROGS=hackterm
+PROGS=fallout-terminal
+DEPENDENCIES=game_controller.o interface.o game_state.o password.o utilities.o
 
 all: $(PROGS)
 
-hackterm: hackterm.o password.o utilities.o
+fallout-terminal: main.o $(DEPENDENCIES)
 	$(CC) $(CFLAGS) -o $@ $^ $(LFLAGS)
 
 -include *.d
 
 clean:
-	/bin/rm -f $(PROGS) *.o a.out *.d
-	/bin/rm -fr docs doxygen.log *.dSYM
+	/bin/rm -f $(PROGS) *.o *.d *.dSYM
